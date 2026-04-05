@@ -1,0 +1,18 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# database
+*.db
+*.db-*
+*.db.bak
+
+# node_modules
+**/node_modules
