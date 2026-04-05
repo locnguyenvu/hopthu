@@ -1,0 +1,15 @@
+version: "0.5"
+
+processes:
+  heart-beat:
+    command: |
+      while true; do sleep 10; done
+  quart:
+    command: |
+      uv run python run.py
+    env_file: ".env"
+  vite:
+    working_dir: frontend
+    command: npm run dev
+    env_file: ".env"
+

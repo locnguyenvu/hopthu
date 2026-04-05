@@ -8,6 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+.env
+.envrc
 
 # database
 *.db
