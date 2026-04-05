@@ -21,13 +21,19 @@ uv add git+https://github.com/locnguyenvu/docthu.git
 
 1. The project is already initialized via `uv init --name='hopthu' --app`. Add dependencies:
    ```bash
-   uv add quart aiohttp sqlalchemy aiosqlite aioimaplib cryptography werkzeug
+   uv add quart aiohttp sqlalchemy aiosqlite aioimaplib cryptography werkzeug alembic
    uv add git+https://github.com/locnguyenvu/docthu.git
    ```
 2. Project structure:
    ```
    hopthu/
    ├── pyproject.toml          # uv project config
+   ├── alembic.ini             # Alembic config
+   ├── migrations/
+   │   ├── env.py              # Alembic env — imports Base + models, configures engine
+   │   ├── script.py.mako      # Migration template
+   │   └── versions/           # Auto-generated migration files
+   │       └── 001_init_tables.py
    ├── app/
    │   ├── __init__.py
    │   ├── config.py
@@ -101,7 +107,7 @@ uv add git+https://github.com/locnguyenvu/docthu.git
 
 1. In `db.py`, configure SQLAlchemy async engine with `aiosqlite` backend, enabling foreign keys and WAL mode:
    ```python
-   from sqlalchemy import event, text
+   from sqlalchemy import event
    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
    engine = create_async_engine(f"sqlite+aiosqlite:///{config.QUART_DB_PATH}")
@@ -114,7 +120,34 @@ uv add git+https://github.com/locnguyenvu/docthu.git
        cursor.close()
    ```
 2. In `models.py`, define all ORM models using SQLAlchemy declarative base (see Section 1.2).
-3. On app startup, call `async with engine.begin() as conn: await conn.run_sync(Base.metadata.create_all)` to create tables.
+3. **Database migrations are managed by Alembic, independently from the server process.** The server does NOT create or migrate tables on startup. All schema changes go through Alembic.
+
+**Alembic setup:**
+1. Initialize Alembic:
+   ```bash
+   uv run alembic init migrations
+   ```
+2. Configure `alembic.ini` — set `sqlalchemy.url` to use the same `QUART_DB_PATH`:
+   ```ini
+   sqlalchemy.url = sqlite:///%(QUART_DB_PATH)s
+   ```
+3. Configure `migrations/env.py`:
+   - Import `Base` from `app.models` so Alembic can detect model changes.
+   - Apply the same SQLite pragmas (foreign keys + WAL) on connect.
+   - Read `QUART_DB_PATH` from environment to build the connection URL.
+   ```python
+   from app.models import Base
+   target_metadata = Base.metadata
+   ```
+4. Generate the initial migration from the ORM models:
+   ```bash
+   uv run alembic revision --autogenerate -m "init tables"
+   ```
+5. Apply migrations:
+   ```bash
+   uv run alembic upgrade head
+   ```
+6. For future schema changes: update `models.py`, then run `uv run alembic revision --autogenerate -m "description"` followed by `uv run alembic upgrade head`. Always review the generated migration before applying.
 
 ---
 
@@ -548,13 +581,22 @@ All datetime fields in responses are formatted in the app timezone (`QUART_TZ`) 
 
 1. **Local development:** Run Vite dev server (`cd frontend && npm run dev`) with proxy to Quart backend. Run Quart with `uv run python run.py` (debug mode).
 2. **Production build:** `cd frontend && npm run build` outputs to `app/static/`. Quart serves the SPA from there. The catch-all route returns `index.html` for all non-API, non-login paths.
-3. **Database:** SQLAlchemy handles table creation on app startup via `Base.metadata.create_all`. For future schema changes, use Alembic if needed.
+3. **Database migrations:** Run independently from the server. Always migrate before starting the app:
+   ```bash
+   # Apply migrations
+   QUART_DB_PATH=./data.db uv run alembic upgrade head
+
+   # Generate new migration after model changes
+   QUART_DB_PATH=./data.db uv run alembic revision --autogenerate -m "description"
+   ```
 4. **Running the app:**
    ```bash
-   # Development
+   # Development (migrate first, then start)
+   QUART_DB_PATH=./data.db uv run alembic upgrade head
    QUART_TZ=Asia/Ho_Chi_Minh QUART_SECRET_KEY=dev-secret QUART_DB_PATH=./data.db QUART_USER_PASSWORD_HASH=... uv run python run.py
 
-   # Production
+   # Production (migrate first, then start)
+   QUART_DB_PATH=./data.db uv run alembic upgrade head
    QUART_TZ=Asia/Ho_Chi_Minh QUART_SECRET_KEY=... QUART_DB_PATH=./data.db QUART_USER_PASSWORD_HASH=... uv run hypercorn run:app --bind 0.0.0.0:5000
    ```
 5. **Deployment:** Run behind `hypercorn` for production ASGI. Accessible on Tailscale network only.
@@ -583,9 +625,9 @@ Each step below is a self-contained unit. Complete it fully (tests pass, feature
 #### Phase 1
 
 **Step 1: Project skeleton + database**
-- RED: Write a test that imports the app, starts it, and confirms the database tables are created (all 5 tables exist).
-- GREEN: Project is already inited (`uv init --name='hopthu' --app`). Add dependencies, set up `app/__init__.py` (Quart app factory), `config.py`, `db.py` (engine with FK + WAL pragmas), `models.py` (all ORM models). App starts and creates tables.
-- VERIFY: `uv run pytest` passes. App starts with `uv run python run.py` without errors.
+- RED: Write a test that runs `alembic upgrade head` against a test database and confirms all 5 tables exist (accounts, mailboxes, emails, templates, email_data). Write a test that verifies `PRAGMA foreign_keys` is ON and `PRAGMA journal_mode` is WAL.
+- GREEN: Project is already inited (`uv init --name='hopthu' --app`). Add dependencies (including `alembic`), set up `app/__init__.py` (Quart app factory), `config.py`, `db.py` (engine with FK + WAL pragmas), `models.py` (all ORM models). Initialize Alembic (`uv run alembic init migrations`), configure `migrations/env.py` to import `Base` from models, generate the initial migration (`uv run alembic revision --autogenerate -m "init tables"`), and apply it (`uv run alembic upgrade head`).
+- VERIFY: `uv run pytest` passes. `uv run alembic upgrade head` creates the database with all tables. App starts with `uv run python run.py` without errors. The server does NOT run any migrations on startup.
 
 **Step 2: Authentication**
 - RED: Write tests for `POST /api/auth/login` — test correct password returns 200 + session cookie, wrong password returns 401. Test that a protected route returns 401 without session and 200 with session.
