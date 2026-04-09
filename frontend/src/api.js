@@ -99,4 +99,55 @@ export const api = {
   reparseEmail: (id) => request(`/api/emails/${id}/reparse`, {
     method: 'POST',
   }),
+
+  // Connections
+  listConnections: () => request('/api/connections'),
+  createConnection: (data) => request('/api/connections', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  getConnection: (id) => request(`/api/connections/${id}`),
+  updateConnection: (id, data) => request(`/api/connections/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  deleteConnection: (id) => request(`/api/connections/${id}`, {
+    method: 'DELETE',
+  }),
+  testConnection: (id) => request(`/api/connections/${id}/test`, {
+    method: 'POST',
+  }),
+
+  // Triggers
+  listTriggers: (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.template_id) params.set('template_id', filters.template_id);
+    if (filters.connection_id) params.set('connection_id', filters.connection_id);
+    const query = params.toString();
+    return request(`/api/triggers${query ? '?' + query : ''}`);
+  },
+  createTrigger: (data) => request('/api/triggers', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  getTrigger: (id) => request(`/api/triggers/${id}`),
+  updateTrigger: (id, data) => request(`/api/triggers/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  deleteTrigger: (id) => request(`/api/triggers/${id}`, {
+    method: 'DELETE',
+  }),
+  testTrigger: (id, sampleData) => request(`/api/triggers/${id}/test`, {
+    method: 'POST',
+    body: JSON.stringify(sampleData),
+  }),
+  getTriggerLogs: (id, params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/api/triggers/${id}/logs${query ? '?' + query : ''}`);
+  },
+  listAllTriggerLogs: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/api/trigger-logs${query ? '?' + query : ''}`);
+  },
 };

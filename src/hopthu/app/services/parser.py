@@ -5,7 +5,7 @@ import json
 from sqlalchemy import select
 
 from hopthu.app.db import AsyncSession
-from hopthu.app.models import Template, Email, EmailData
+from hopthu.app.models import Template, Email, EmailData, EMAIL_STATUS_EXTRACTED
 
 try:
     from docthu import parse as docthu_parse
@@ -104,7 +104,7 @@ def parse_email(template: Template, email_body: str, content_type: str) -> dict 
 
     try:
         result = docthu_parse(template.template, email_body, stop_on_filled=[v['name'] for v in template.fields])
-        
+
         if result:
             # Convert date/datetime objects to ISO format strings for JSON serialization
             return _make_json_serializable(result)
@@ -166,8 +166,16 @@ async def process_email(email_id: int) -> dict:
                     session.add(email_data)
 
                 # Update email status
-                email.status = "extracted"
+                email.status = EMAIL_STATUS_EXTRACTED
                 await session.commit()
+
+                # Run triggers for the extracted email
+                from hopthu.app.services.trigger import run_triggers_for_email
+                try:
+                    await run_triggers_for_email(email_id)
+                except Exception as e:
+                    # Log error but don't fail the extraction
+                    print(f"Trigger execution error: {e}")
 
                 return {
                     "success": True,

@@ -26,12 +26,16 @@ def create_app():
     from hopthu.app.routes.mailboxes import bp as mailboxes_bp
     from hopthu.app.routes.emails import bp as emails_bp
     from hopthu.app.routes.templates import bp as templates_bp
+    from hopthu.app.routes.connections import bp as connections_bp
+    from hopthu.app.routes.triggers import bp as triggers_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(accounts_bp)
     app.register_blueprint(mailboxes_bp)
     app.register_blueprint(emails_bp)
     app.register_blueprint(templates_bp)
+    app.register_blueprint(connections_bp)
+    app.register_blueprint(triggers_bp)
 
     # Serve index.html for all non-API, non-login routes (SPA catch-all)
     @app.route("/", defaults={"path": ""})

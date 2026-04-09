@@ -21,6 +21,15 @@ async def db_session():
     # Create async engine
     engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
 
+    # Enable foreign keys and WAL mode via event listener (like production)
+    from sqlalchemy import event
+    @event.listens_for(engine.sync_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.close()
+
     # Create all tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -46,7 +55,7 @@ async def test_tables_exist(db_session):
         tables = {row[0] for row in result.fetchall()}
 
         # Check that our tables exist
-        required_tables = {"accounts", "mailboxes", "emails", "templates", "email_data"}
+        required_tables = {"accounts", "mailboxes", "emails", "templates", "email_data", "connections", "triggers", "trigger_logs"}
         for table in required_tables:
             assert table in tables, f"Table '{table}' does not exist"
 

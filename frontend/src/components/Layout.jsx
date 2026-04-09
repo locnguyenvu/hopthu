@@ -23,8 +23,8 @@ export function Layout({ children, sidebar, collapsibleSidebar = false }) {
 
   const navItems = [
     { path: '/', label: 'Inbox', icon: '📧' },
-    { path: '/accounts', label: 'Accounts', icon: '⚙️' },
     { path: '/templates', label: 'Templates', icon: '📝' },
+    { path: '/connections', label: 'Connections', icon: '🔗' },
   ];
 
   // Get current path from window location

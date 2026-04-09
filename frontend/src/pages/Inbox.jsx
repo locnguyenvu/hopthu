@@ -18,7 +18,7 @@ export function Inbox() {
     account_id: '',
   });
   const [selectedEmails, setSelectedEmails] = useState(new Set());
-  const [extracting, setExtracting] = useState(false);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -106,7 +106,7 @@ export function Inbox() {
 
   const handleBulkExtract = async () => {
     if (selectedEmails.size === 0) return;
-    setExtracting(true);
+    setBulkProcessing(true);
     const ids = [...selectedEmails];
 
     // Process each email sequentially
@@ -121,7 +121,29 @@ export function Inbox() {
       }
     }
 
-    setExtracting(false);
+    setBulkProcessing(false);
+    clearSelection();
+    loadData();
+  };
+
+  const handleBulkIgnore = async () => {
+    if (selectedEmails.size === 0) return;
+    setBulkProcessing(true);
+    const ids = [...selectedEmails];
+
+    // Process each email sequentially
+    for (const id of ids) {
+      const email = emails.find(e => e.id === id);
+      const label = email?.subject || email?.from_email || `Email #${id}`;
+      try {
+        await api.updateEmailStatus(id, 'ignored');
+        toast.success(`Ignored: ${label}`);
+      } catch (e) {
+        toast.error(`Failed: ${label} - ${e.message}`);
+      }
+    }
+
+    setBulkProcessing(false);
     clearSelection();
     loadData();
   };
@@ -131,6 +153,7 @@ export function Inbox() {
       new: 'bg-gray-100 text-gray-800',
       extracted: 'bg-green-100 text-green-800',
       ignored: 'bg-yellow-100 text-yellow-800',
+      pushed: 'bg-blue-100 text-blue-800',
     };
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] || styles.new}`}>
@@ -152,28 +175,38 @@ export function Inbox() {
     <Layout
       collapsibleSidebar
       sidebar={
-        <div>
-          <h3 className="font-medium text-gray-900 mb-3">Accounts</h3>
-          <div className="space-y-1">
-            <button
-              onClick={() => { setFilters(prev => ({ ...prev, account_id: '' })); applyFilters(); }}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm ${
-                filters.account_id === '' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              All Accounts
-            </button>
-            {accounts.map(account => (
+        <div className="flex flex-col h-full">
+          <div className="flex-grow">
+            <h3 className="font-medium text-gray-900 mb-3">Accounts</h3>
+            <div className="space-y-1">
               <button
-                key={account.id}
-                onClick={() => { setFilters(prev => ({ ...prev, account_id: account.id })); applyFilters(); }}
+                onClick={() => { setFilters(prev => ({ ...prev, account_id: '' })); applyFilters(); }}
                 className={`w-full text-left px-3 py-2 rounded-md text-sm ${
-                  filters.account_id == account.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+                  filters.account_id === '' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                {account.email}
+                All Accounts
               </button>
-            ))}
+              {accounts.map(account => (
+                <button
+                  key={account.id}
+                  onClick={() => { setFilters(prev => ({ ...prev, account_id: account.id })); applyFilters(); }}
+                  className={`w-full text-left px-3 py-2 rounded-md text-sm ${
+                    filters.account_id == account.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {account.email}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-auto pt-4 border-t border-gray-200">
+            <a
+              href="/accounts"
+              className="block w-full text-left px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100"
+            >
+              ⚙️ Accounts
+            </a>
           </div>
         </div>
       }
@@ -189,29 +222,6 @@ export function Inbox() {
             {syncing ? 'Syncing...' : '🔄 Sync'}
           </button>
         </div>
-
-        {/* Bulk action bar */}
-        {selectedEmails.size > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4 flex items-center gap-4">
-            <span className="text-sm font-medium text-blue-900">
-              {selectedEmails.size} email{selectedEmails.size > 1 ? 's' : ''} selected
-            </span>
-            <button
-              onClick={handleBulkExtract}
-              disabled={extracting}
-              className="bg-blue-600 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-            >
-              {extracting ? 'Extracting...' : '📤 Extract'}
-            </button>
-            <button
-              onClick={clearSelection}
-              disabled={extracting}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50"
-            >
-              Clear selection
-            </button>
-          </div>
-        )}
 
         {/* Filters */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
@@ -239,6 +249,7 @@ export function Inbox() {
                 <option value="new">New</option>
                 <option value="extracted">Extracted</option>
                 <option value="ignored">Ignored</option>
+                <option value="pushed">Pushed</option>
               </select>
             </div>
             <button
@@ -249,6 +260,36 @@ export function Inbox() {
             </button>
           </div>
         </div>
+
+        {/* Bulk action bar */}
+        {selectedEmails.size > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4 flex items-center gap-4">
+            <span className="text-sm font-medium text-blue-900">
+              {selectedEmails.size} email{selectedEmails.size > 1 ? 's' : ''} selected
+            </span>
+            <button
+              onClick={handleBulkExtract}
+              disabled={bulkProcessing}
+              className="bg-blue-600 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
+              {bulkProcessing ? 'Extracting...' : '📤 Extract'}
+            </button>
+            <button
+              onClick={handleBulkIgnore}
+              disabled={bulkProcessing}
+              className="bg-yellow-600 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-yellow-700 disabled:opacity-50"
+            >
+              {bulkProcessing ? 'Ignoring...' : '🚫 Ignore'}
+            </button>
+            <button
+              onClick={clearSelection}
+              disabled={bulkProcessing}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50"
+            >
+              Clear selection
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
@@ -279,15 +320,12 @@ export function Inbox() {
                       checked={isSelectedAll}
                       ref={(el) => { if (el) el.indeterminate = isSomeSelected; }}
                       onChange={toggleSelectAll}
-                      disabled={extracting}
+                      disabled={bulkProcessing}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    From
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Subject
+                    Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -308,24 +346,21 @@ export function Inbox() {
                         type="checkbox"
                         checked={selectedEmails.has(email.id)}
                         onChange={() => toggleSelect(email.id)}
-                        disabled={extracting}
+                        disabled={bulkProcessing}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link
-                        href={`/emails/${email.id}`}
-                        className="text-gray-900 font-medium"
-                      >
-                        {email.from_email}
-                      </Link>
                     </td>
                     <td className="px-6 py-4">
                       <Link
                         href={`/emails/${email.id}`}
-                        className="text-gray-600 hover:text-blue-600"
+                        className="text-gray-600 hover:text-blue-600 block"
                       >
-                        {email.subject || '(no subject)'}
+                        <div className="font-medium text-gray-900">
+                          {email.subject || '(no subject)'}
+                        </div>
+                        <div className="text-sm text-gray-500 mt-1">
+                          {email.from_email}
+                        </div>
                       </Link>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

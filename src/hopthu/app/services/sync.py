@@ -11,7 +11,7 @@ from aioimaplib import aioimaplib
 
 from hopthu.app import config
 from hopthu.app.db import AsyncSession
-from hopthu.app.models import Account, Mailbox, Email
+from hopthu.app.models import Account, Mailbox, Email, EMAIL_STATUS_NEW
 
 
 def decode_mime_header(header_value: str) -> str:
@@ -198,7 +198,7 @@ async def sync_account(account_id: int) -> dict:
                         body=body,
                         message_id=message_id,
                         meta_data={"Message-ID": message_id},
-                        status="new",
+                        status=EMAIL_STATUS_NEW,
                         received_at=received_at,
                     )
                     session.add(email)

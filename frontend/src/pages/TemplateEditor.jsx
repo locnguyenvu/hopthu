@@ -38,6 +38,11 @@ export function TemplateEditor({ id, emailId }) {
   const [newVarValue, setNewVarValue] = useState('');
   const [newVarType, setNewVarType] = useState('str');
 
+  // State for trigger existence check
+  const [hasTrigger, setHasTrigger] = useState(false);
+  const [triggerId, setTriggerId] = useState(null);
+  const [checkingTrigger, setCheckingTrigger] = useState(false);
+
 
   // Build full template text with variable assignments prepended
   const [fullTemplateText, setFullTemplateText] = useState('')
@@ -72,6 +77,9 @@ export function TemplateEditor({ id, emailId }) {
         });
         setOriginalBody(t.template);
         setFullTemplateText(t.template)
+
+        // Check if a trigger exists for this template
+        await checkForExistingTrigger(id);
       } else if (emailId) {
         // Create from email
         const response = await api.getEmail(emailId);
@@ -90,8 +98,8 @@ export function TemplateEditor({ id, emailId }) {
         setVariableAssignments([]);
       }
 
-      // Load emails for testing
-      const emailsRes = await api.listEmails({ per_page: 100, status: 'new', from_email: template.from_email });
+      // Load emails for testing - filter by from_email, status=new, order by created_at desc
+      const emailsRes = await api.listEmails({ per_page: 100, status: 'new', from_email: template.from_email, order_by: 'created_at', order_dir: 'desc' });
       setEmails(emailsRes.data || []);
       if (emailId) {
         setTestEmailId(emailId);
@@ -100,6 +108,29 @@ export function TemplateEditor({ id, emailId }) {
       setError(e.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkForExistingTrigger = async (templateId) => {
+    try {
+      setCheckingTrigger(true);
+      const response = await api.listTriggers({ template_id: templateId });
+      const triggers = response.data || [];
+      
+      if (triggers.length > 0) {
+        // Take the first trigger if multiple exist
+        setHasTrigger(true);
+        setTriggerId(triggers[0].id);
+      } else {
+        setHasTrigger(false);
+        setTriggerId(null);
+      }
+    } catch (e) {
+      console.error('Error checking for existing trigger:', e.message);
+      setHasTrigger(false);
+      setTriggerId(null);
+    } finally {
+      setCheckingTrigger(false);
     }
   };
 
@@ -406,9 +437,52 @@ export function TemplateEditor({ id, emailId }) {
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          {id ? 'Edit Template' : 'New Template'}
-        </h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            {id ? 'Edit Template' : 'New Template'}
+          </h1>
+          <div className="flex gap-3">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+            {id && (
+              checkingTrigger ? (
+                <button
+                  disabled
+                  className="px-4 py-2 bg-gray-400 text-white rounded-md text-sm font-medium"
+                >
+                  Checking...
+                </button>
+              ) : hasTrigger ? (
+                <button
+                  onClick={() => route(`/triggers/${triggerId}`)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700"
+                >
+                  View Trigger
+                </button>
+              ) : (
+                <button
+                  onClick={() => route(`/triggers/new?template_id=${id}`)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
+                >
+                  Create Trigger
+                </button>
+              )
+            )}
+            {id && (
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        </div>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
@@ -598,24 +672,6 @@ export function TemplateEditor({ id, emailId }) {
               </div>
             )}
 
-            {/* Save and Delete Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Template'}
-              </button>
-              {id && (
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md font-medium hover:bg-red-700"
-                >
-                  Delete
-                </button>
-              )}
-            </div>
           </div>
         </div>
       </div>

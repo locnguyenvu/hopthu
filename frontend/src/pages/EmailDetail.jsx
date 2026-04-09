@@ -9,32 +9,51 @@ export function EmailDetail({ id }) {
   const [error, setError] = useState(null);
   const [updating, setUpdating] = useState(false);
   const [templates, setTemplates] = useState([]);
+  const [triggerLogs, setTriggerLogs] = useState([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
   const [parsing, setParsing] = useState(false);
-  const [activeTab, setActiveTab] = useState('content');
+  const [activeTab, setActiveTab] = useState('content'); // Default to 'content' tab
   const [contentHeight, setContentHeight] = useState('auto');
+  const [showActions, setShowActions] = useState(false);
   const containerRef = useRef(null);
+  const actionsRef = useRef(null);
 
   useEffect(() => {
     loadData();
   }, [id]);
 
   useEffect(() => {
-    if (activeTab === 'content') {
-      const updateHeight = () => {
-        const container = containerRef.current;
-        if (container) {
-          const containerTop = container.getBoundingClientRect().top;
-          const viewportHeight = window.innerHeight;
-          const availableHeight = viewportHeight - containerTop - 24;
+    const handleClickOutside = (event) => {
+      if (actionsRef.current && !actionsRef.current.contains(event.target)) {
+        setShowActions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    // Calculate height regardless of which tab is active
+    // Delay to ensure DOM is rendered
+    const updateHeight = () => {
+      const container = containerRef.current;
+      if (container) {
+        const containerTop = container.getBoundingClientRect().top;
+        const viewportHeight = window.innerHeight;
+        const availableHeight = viewportHeight - containerTop - 24;
+        // Only update if the available height is greater than our minimum
+        if (availableHeight > 800) {
           setContentHeight(`${availableHeight}px`);
+        } else {
+          setContentHeight('800px');
         }
-      };
-      // Delay to ensure DOM is rendered
-      setTimeout(updateHeight, 0);
-      window.addEventListener('resize', updateHeight);
-      return () => window.removeEventListener('resize', updateHeight);
-    }
-  }, [activeTab, email]);
+      }
+    };
+    
+    setTimeout(updateHeight, 0);
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, [activeTab, email]); // Recalculate when tab or email changes
 
   const loadData = async () => {
     try {
@@ -45,10 +64,25 @@ export function EmailDetail({ id }) {
       ]);
       setEmail(emailRes.data);
       setTemplates(templatesRes.data || []);
+      
+      // Load trigger logs for this email
+      await loadTriggerLogs();
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const loadTriggerLogs = async () => {
+    try {
+      setLoadingLogs(true);
+      const response = await api.listAllTriggerLogs({ email_id: id });
+      setTriggerLogs(response.data.logs || []);
+    } catch (e) {
+      console.error('Failed to load trigger logs:', e.message);
+    } finally {
+      setLoadingLogs(false);
     }
   };
 
@@ -90,15 +124,18 @@ export function EmailDetail({ id }) {
         <iframe
           srcdoc={email.body}
           sandbox="allow-same-origin"
-          className="w-full border border-gray-200 rounded-md"
-          style={{ height: contentHeight }}
+          className="w-full border border-gray-200 rounded-md flex-grow"
+          style={{ height: contentHeight, minHeight: 0 }}
           title="Email content"
         />
       );
     }
 
     return (
-      <pre className="bg-gray-50 p-4 rounded-md overflow-auto whitespace-pre-wrap text-sm" style={{ maxHeight: contentHeight }}>
+      <pre 
+        className="bg-gray-50 p-4 rounded-md overflow-auto whitespace-pre-wrap text-sm"
+        style={{ height: contentHeight }}
+      >
         {email.body}
       </pre>
     );
@@ -127,10 +164,12 @@ export function EmailDetail({ id }) {
 
   return (
     <Layout>
-      <div className="mb-4">
+      <div className="flex items-center gap-3 mb-4">
         <Link href="/" className="text-blue-600 hover:text-blue-700 text-sm">
           ← Back to Inbox
         </Link>
+        <span className="text-gray-300">|</span>
+        <span className="text-sm font-medium text-gray-700">{email.subject || '(no subject)'}</span>
       </div>
 
       {error && (
@@ -139,139 +178,236 @@ export function EmailDetail({ id }) {
         </div>
       )}
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        {/* Headers */}
-        <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-2 text-sm font-medium text-gray-500">From:</div>
-            <div className="col-span-10 text-sm">{email.from_email}</div>
-          </div>
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-2 text-sm font-medium text-gray-500">To:</div>
-            <div className="col-span-10 text-sm">{email.to_email || '-'}</div>
-          </div>
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-2 text-sm font-medium text-gray-500">Subject:</div>
-            <div className="col-span-10 text-sm font-medium">{email.subject || '(no subject)'}</div>
-          </div>
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-2 text-sm font-medium text-gray-500">Received:</div>
-            <div className="col-span-10 text-sm">{formatDate(email.received_at)}</div>
-          </div>
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-2 text-sm font-medium text-gray-500">Status:</div>
-            <div className="col-span-10">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4 flex flex-col flex-grow min-h-[80vh]">
+          {/* Headers - Compact */}
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm mb-3 pb-3 border-b border-gray-200">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-500 font-medium">From:</span>
+                <span>{email.from_email}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-500 font-medium">To:</span>
+                <span>{email.to_email || '-'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-500 font-medium">Received:</span>
+                <span>{formatDate(email.received_at)}</span>
+              </div>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                 email.status === 'extracted'
                   ? 'bg-green-100 text-green-800'
                   : email.status === 'ignored'
                   ? 'bg-yellow-100 text-yellow-800'
+                  : email.status === 'pushed'
+                  ? 'bg-blue-100 text-blue-800'
                   : 'bg-gray-100 text-gray-800'
               }`}>
                 {email.status}
               </span>
             </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-3 mb-6">
-          <button
-            onClick={() => handleStatusChange('ignored')}
-            disabled={updating || email.status === 'ignored'}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
-          >
-            {updating ? 'Updating...' : 'Mark Ignored'}
-          </button>
-          <button
-            onClick={() => handleStatusChange('new')}
-            disabled={updating || email.status === 'new'}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
-          >
-            Mark New
-          </button>
-          <button
-            onClick={handleReparse}
-            disabled={parsing}
-            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-200 disabled:opacity-50"
-          >
-            {parsing ? 'Re-parsing...' : 'Re-parse'}
-          </button>
-          <Link
-            href={`/emails/${id}/new-template`}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
-          >
-            Create Template
-          </Link>
-        </div>
-
-        {/* Tabs: Content / Matching Templates */}
-        <div className="mb-4 border-b border-gray-200">
-          <nav className="-mb-px flex space-x-6">
-            <button
-              onClick={() => setActiveTab('content')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'content'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Content
-            </button>
-            <button
-              onClick={() => setActiveTab('templates')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'templates'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Templates{templates.length > 0 && ` (${templates.length})`}
-            </button>
-          </nav>
-        </div>
-
-        {/* Tab Content */}
-        {activeTab === 'content' && (
-          <div ref={containerRef}>
-            {renderBody()}
-          </div>
-        )}
-
-        {activeTab === 'templates' && (
-          <div className="space-y-6">
-            {templates.length === 0 ? (
-              <p className="text-gray-500">No templates match this sender.</p>
-            ) : (
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-3">Matching Templates</h3>
-                <div className="space-y-2">
-                  {templates.map((template) => (
-                    <div key={template.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-md">
-                      <div>
-                        <p className="font-medium">{template.subject || 'Any subject'}</p>
-                      </div>
-                      <Link
-                        href={`/templates/${template.id}`}
-                        className="text-blue-600 hover:text-blue-700 text-sm"
-                      >
-                        Edit
-                      </Link>
-                    </div>
-                  ))}
+            {/* Actions Menu */}
+            <div className="relative" ref={actionsRef}>
+              <button
+                onClick={() => setShowActions(!showActions)}
+                className="p-1.5 hover:bg-gray-100 rounded-md"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
+              </button>
+              {showActions && (
+                <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                  <button
+                    onClick={() => { handleStatusChange('ignored'); setShowActions(false); }}
+                    disabled={updating || email.status === 'ignored'}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Mark Ignored
+                  </button>
+                  <button
+                    onClick={() => { handleStatusChange('new'); setShowActions(false); }}
+                    disabled={updating || email.status === 'new'}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Mark New
+                  </button>
+                  <button
+                    onClick={() => { handleStatusChange('extracted'); setShowActions(false); }}
+                    disabled={updating || email.status === 'extracted'}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Mark Extracted
+                  </button>
+                  <button
+                    onClick={() => { handleStatusChange('pushed'); setShowActions(false); }}
+                    disabled={updating || email.status === 'pushed'}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Mark Pushed
+                  </button>
+                  <button
+                    onClick={() => { handleReparse(); setShowActions(false); }}
+                    disabled={parsing}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Re-parse
+                  </button>
                 </div>
-              </div>
-            )}
-            {email.email_data && (
-              <div className="pt-6 border-t border-gray-200">
-                <h3 className="text-sm font-medium text-gray-500 mb-3">Extracted Data</h3>
-                <pre className="bg-gray-50 p-4 rounded-md overflow-auto text-sm">
-                  {JSON.stringify(email.email_data.data, null, 2)}
-                </pre>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        )}
+
+          {/* Tabs: Content / Matching Templates */}
+          <div className="mb-3 border-b border-gray-200">
+            <nav className="-mb-px flex space-x-4">
+              <button
+                onClick={() => setActiveTab('content')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'content'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Content
+              </button>
+              <button
+                onClick={() => setActiveTab('templates')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'templates'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Templates{templates.length > 0 && ` (${templates.length})`}
+              </button>
+            </nav>
+          </div>
+
+          {/* Tab Content */}
+          <div className="flex-grow overflow-auto flex flex-col">
+            {activeTab === 'content' && (
+              <div ref={containerRef} className="h-full flex flex-col flex-grow">
+                {renderBody()}
+              </div>
+            )}
+
+          {activeTab === 'templates' && (
+            <div className="space-y-6 h-full overflow-auto flex-grow flex flex-col">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-gray-500">Matching Templates</h3>
+                  <Link
+                    href={`/emails/${id}/new-template`}
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                  >
+                    Create Template
+                  </Link>
+                </div>
+                {templates.length === 0 ? (
+                  <p className="text-gray-500">No templates match this sender.</p>
+                ) : (
+                  <div className="space-y-2 flex-grow">
+                    {templates.map((template) => (
+                      <div key={template.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-md">
+                        <div>
+                          <p className="font-medium">{template.subject || 'Any subject'}</p>
+                        </div>
+                        <Link
+                          href={`/templates/${template.id}`}
+                          className="text-blue-600 hover:text-blue-700 text-sm"
+                        >
+                          Edit
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {email.email_data && (
+                <div className="pt-6 border-t border-gray-200 flex-grow">
+                  <h3 className="text-sm font-medium text-gray-500 mb-3">Extracted Data</h3>
+                  <pre className="bg-gray-50 p-4 rounded-md overflow-auto text-sm flex-grow">
+                    {JSON.stringify(email.email_data.data, null, 2)}
+                  </pre>
+                </div>
+              )}
+              <div className="pt-6 border-t border-gray-200 flex-grow overflow-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-gray-500">Execution Logs</h3>
+                </div>
+                {loadingLogs ? (
+                  <p className="text-gray-500">Loading logs...</p>
+                ) : triggerLogs.length === 0 ? (
+                  <p className="text-gray-500">No trigger logs for this email.</p>
+                ) : (
+                  <div className="space-y-3 flex-grow overflow-auto">
+                    {triggerLogs.map((log) => (
+                      <div key={log.id} className="border border-gray-200 rounded-md p-4 flex-shrink-0">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              log.status === 'success'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {log.status}
+                            </span>
+                            <span className="text-sm text-gray-600">
+                              {log.trigger_name}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {new Date(log.executed_at).toLocaleString()}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 text-sm">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-gray-700">{log.request_method}</span>
+                            <span className="truncate">{log.request_url}</span>
+                          </div>
+
+                          {log.response_status && (
+                            <div className="mt-1">
+                              Response: <span className={log.response_status < 400 ? 'text-green-600' : 'text-red-600'}>
+                                {log.response_status}
+                              </span>
+                            </div>
+                          )}
+
+                          <details className="mt-2">
+                            <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                              Request details
+                            </summary>
+                            <div className="mt-2 text-xs">
+                              <div className="bg-gray-50 p-2 rounded">
+                                <div className="mb-2">
+                                  <strong>Headers:</strong>
+                                  <pre className="mt-1">{JSON.stringify(log.request_headers, null, 2)}</pre>
+                                </div>
+                                <div className="mb-2">
+                                  <strong>Body:</strong>
+                                  <pre className="mt-1 overflow-auto max-h-32">{JSON.stringify(log.request_body, null, 2)}</pre>
+                                </div>
+                                {log.response_body && (
+                                  <div>
+                                    <strong>Response:</strong>
+                                    <pre className="mt-1 overflow-auto max-h-32">{log.response_body}</pre>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </details>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </Layout>
   );

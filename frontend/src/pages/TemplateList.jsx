@@ -7,6 +7,7 @@ export function TemplateList() {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [templatesWithTriggers, setTemplatesWithTriggers] = useState(new Set());
 
   useEffect(() => {
     loadTemplates();
@@ -16,7 +17,22 @@ export function TemplateList() {
     try {
       setLoading(true);
       const response = await api.listTemplates();
-      setTemplates(response.data || []);
+      const templatesData = response.data || [];
+      setTemplates(templatesData);
+      
+      // Check for triggers for each template
+      const templatesWithTriggerIds = new Set();
+      for (const template of templatesData) {
+        try {
+          const triggerResponse = await api.listTriggers({ template_id: template.id });
+          if (triggerResponse.data && triggerResponse.data.length > 0) {
+            templatesWithTriggerIds.add(template.id);
+          }
+        } catch (err) {
+          console.error(`Error checking triggers for template ${template.id}:`, err);
+        }
+      }
+      setTemplatesWithTriggers(templatesWithTriggerIds);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -73,13 +89,13 @@ export function TemplateList() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  From
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Subject
+                  Template
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Priority
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Has Trigger
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -89,19 +105,32 @@ export function TemplateList() {
             <tbody className="bg-white divide-y divide-gray-200">
               {templates.map((template) => (
                 <tr key={template.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4">
                     <Link
                       href={`/templates/${template.id}`}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="text-blue-600 hover:text-blue-900 block"
                     >
-                      {template.from_email}
+                      <div className="font-medium text-gray-900">
+                        {template.subject || 'Any subject'}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {template.from_email}
+                      </div>
                     </Link>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {template.subject || 'Any'}
+                    {template.priority ?? 'Auto'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {template.priority ?? 'Auto'}
+                    {templatesWithTriggers.has(template.id) ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Yes
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        No
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link

@@ -10,6 +10,11 @@ import { AccountDetail } from './pages/AccountDetail';
 import { EmailDetail } from './pages/EmailDetail';
 import { TemplateList } from './pages/TemplateList';
 import { TemplateEditor } from './pages/TemplateEditor';
+import { ConnectionList } from './pages/ConnectionList';
+import { ConnectionForm } from './pages/ConnectionForm';
+import { ConnectionDetail } from './pages/ConnectionDetail';
+import { TriggerEditor } from './pages/TriggerEditor';
+import { TriggerDetail } from './pages/TriggerDetail';
 
 export const ToastContext = createContext();
 let toastId = 0;
@@ -49,6 +54,12 @@ export function App() {
         <Route path="/templates/new" component={TemplateEditor} />
         <Route path="/templates/:id" component={TemplateEditor} />
         <Route path="/emails/:emailId/new-template" component={TemplateEditor} />
+        <Route path="/connections" component={ConnectionList} />
+        <Route path="/connections/new" component={ConnectionForm} />
+        <Route path="/connections/:id" component={ConnectionDetail} />
+        <Route path="/triggers/new" component={TriggerEditor} />
+        <Route path="/triggers/:id/edit" component={TriggerEditor} />
+        <Route path="/triggers/:id" component={TriggerDetail} />
       </Router>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </ToastContext.Provider>

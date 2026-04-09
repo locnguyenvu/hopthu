@@ -8,6 +8,13 @@ from sqlalchemy import (
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 
+# Email status constants
+EMAIL_STATUS_NEW = "new"
+EMAIL_STATUS_EXTRACTED = "extracted"
+EMAIL_STATUS_IGNORED = "ignored"
+EMAIL_STATUS_PUSHED = "pushed"
+
+
 class Base(DeclarativeBase):
     """Base class for all models."""
     pass
@@ -90,7 +97,7 @@ class Email(Base):
     body = Column(Text, nullable=True)
     message_id = Column(String, nullable=False)  # extracted from Message-ID header
     meta_data = Column(JSON, nullable=False, default=dict)  # additional headers
-    status = Column(String, nullable=False, default="new")  # new | extracted | ignored
+    status = Column(String, nullable=False, default=EMAIL_STATUS_NEW)  # new | extracted | ignored | pushed
     received_at = Column(DateTime, nullable=False)  # from IMAP server, stored in app timezone
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
@@ -134,6 +141,7 @@ class Template(Base):
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     email_data = relationship("EmailData", back_populates="template", cascade="all, delete-orphan")
+    triggers = relationship("Trigger", back_populates="template", cascade="all, delete-orphan")
 
     def to_dict(self):
         """Convert to dictionary."""
@@ -170,5 +178,112 @@ class EmailData(Base):
             "email_id": self.email_id,
             "template_id": self.template_id,
             "data": self.data,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class Connection(Base):
+    """External API connection for triggers."""
+    __tablename__ = "connections"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False, unique=True)
+    endpoint = Column(String, nullable=False)              # URL to send request to
+    method = Column(String, nullable=False, default="POST")  # POST | GET | PUT
+    headers = Column(JSON, nullable=False, default=list)   # [{ "key": "...", "value": "...", "encrypted": false }]
+    fields = Column(JSON, nullable=False, default=list)   # [{ "name": "amount", "type": "number", "required": true }]
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    triggers = relationship("Trigger", back_populates="connection", cascade="all, delete-orphan")
+
+    def to_dict(self, mask_secrets=True):
+        """Convert to dictionary. Mask encrypted header values by default."""
+        headers = []
+        for h in (self.headers or []):
+            header = {"key": h.get("key"), "encrypted": h.get("encrypted", False)}
+            if mask_secrets and h.get("encrypted"):
+                header["value"] = "••••••"
+            else:
+                header["value"] = h.get("value")
+            headers.append(header)
+        return {
+            "id": self.id,
+            "name": self.name,
+            "endpoint": self.endpoint,
+            "method": self.method,
+            "headers": headers,
+            "fields": self.fields or [],
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class Trigger(Base):
+    """Trigger that fires HTTP requests when emails are extracted."""
+    __tablename__ = "triggers"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    template_id = Column(Integer, ForeignKey("templates.id", ondelete="CASCADE"), nullable=False)
+    connection_id = Column(Integer, ForeignKey("connections.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    field_mappings = Column(JSON, nullable=False, default=list)
+    # [{ "source": "extracted_data.amount", "target": "payment.value" },
+    #  { "source": "meta_data.received_at", "target": "timestamp" }]
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    template = relationship("Template", back_populates="triggers")
+    connection = relationship("Connection", back_populates="triggers")
+
+    def to_dict(self):
+        """Convert to dictionary."""
+        return {
+            "id": self.id,
+            "template_id": self.template_id,
+            "connection_id": self.connection_id,
+            "name": self.name,
+            "is_active": self.is_active,
+            "field_mappings": self.field_mappings,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class TriggerLog(Base):
+    """Log of trigger executions."""
+    __tablename__ = "trigger_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    trigger_id = Column(Integer, ForeignKey("triggers.id", ondelete="CASCADE"), nullable=False)
+    email_id = Column(Integer, ForeignKey("emails.id", ondelete="CASCADE"), nullable=True)  # nullable for test executions
+    request_url = Column(String, nullable=False)
+    request_method = Column(String, nullable=False)
+    request_headers = Column(JSON, nullable=False, default=dict)  # headers sent (secrets masked)
+    request_body = Column(JSON, nullable=False, default=dict)     # actual payload sent
+    response_status = Column(Integer, nullable=True)              # HTTP status code
+    response_body = Column(Text, nullable=True)                   # response body (truncated)
+    status = Column(String, nullable=False, default="pending")    # pending | success | failed
+    executed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    trigger = relationship("Trigger")
+    email = relationship("Email")
+
+    def to_dict(self):
+        """Convert to dictionary."""
+        return {
+            "id": self.id,
+            "trigger_id": self.trigger_id,
+            "email_id": self.email_id,
+            "request_url": self.request_url,
+            "request_method": self.request_method,
+            "request_headers": self.request_headers,
+            "request_body": self.request_body,
+            "response_status": self.response_status,
+            "response_body": self.response_body,
+            "status": self.status,
+            "executed_at": self.executed_at.isoformat() if self.executed_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
