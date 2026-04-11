@@ -9,7 +9,7 @@ from cryptography.fernet import Fernet
 
 
 # Configuration values from environment
-QUART_SECRET_KEY = os.environ.get("QUART_SECRET_KEY", "dev-secret-key-change-in-production")
+QUART_SECRET_KEY = os.environ.get("QUART_SECRET_KEY", "")
 QUART_DB_PATH = os.environ.get("QUART_DB_PATH", str(Path(__file__).parent.parent.parent / "data.db"))
 QUART_USER_PASSWORD_HASH = os.environ.get("QUART_USER_PASSWORD_HASH", "")
 QUART_TZ = os.environ.get("QUART_TZ", "Asia/Ho_Chi_Minh")

@@ -2,7 +2,7 @@
 
 ## Overview
 
-A single-user email client running on a remote server (Tailscale private network), unifying emails from multiple IMAP accounts into a single view with template-based data extraction.
+A single-user email client running on a remote server, unifying emails from multiple IMAP accounts into a single view with template-based data extraction. The application provides a clean, modern interface for managing multiple email accounts and extracting structured data from emails using customizable templates.
 
 ## Tech Stack
 
@@ -82,6 +82,36 @@ A single-user email client running on a remote server (Tailscale private network
 - **Email Detail**: View email, status controls, extracted data
 - **Template List**: All templates table
 - **Template Editor**: Create/edit templates with field marking
+- **Connection List**: Manage external API connections
+- **Connection Form**: Create/update webhook connections with headers and fields
+- **Trigger List**: Manage triggers linking templates to connections
+- **Trigger Form**: Create/update triggers with field mappings
+- **Trigger Logs**: View execution history and response details
+
+### Connection & Triggers
+
+#### Features Implemented
+- **Connections**: External API connections for outbound requests
+  - Secure storage of API endpoints, headers (with encrypted values)
+  - Field definitions for expected payload structure
+  - Connection testing functionality
+- **Triggers**: Event-driven automation system
+  - Link templates to connections for automated data pushing
+  - Field mapping between extracted email data and API payloads
+  - Active/inactive toggle for trigger control
+  - Execution logging with status and response details
+- **Event Processing**: Automated execution when emails are parsed
+  - Real-time trigger firing when emails match templates
+  - Status updates based on trigger execution results
+  - Detailed logging of all trigger executions
+- **Trigger Logs**: Execution history and monitoring
+  - Request/response logging with status codes
+  - Error tracking and debugging information
+  - Historical execution records for auditing
+- **Payload Building**: Flexible mapping system
+  - Source/target field mappings between extracted data and API payloads
+  - Support for nested data structures
+  - Type validation for field values
 
 ## File Structure
 
@@ -96,13 +126,16 @@ A single-user email client running on a remote server (Tailscale private network
 │   │   ├── routes/
 │   │   │   ├── auth.py          # Login/logout
 │   │   │   ├── accounts.py      # Account CRUD
+│   │   │   ├── connections.py   # Connection management
 │   │   │   ├── mailboxes.py     # Mailbox management
 │   │   │   ├── emails.py        # Email endpoints + sync
-│   │   │   └── templates.py     # Template CRUD + test
+│   │   │   ├── templates.py     # Template CRUD + test
+│   │   │   └── triggers.py      # Trigger management
 │   │   ├── services/
 │   │   │   ├── imap.py          # IMAP connection
 │   │   │   ├── sync.py          # Email sync logic
-│   │   │   └── parser.py        # Template matching
+│   │   │   ├── parser.py        # Template matching
+│   │   │   └── trigger.py       # Trigger execution
 │   │   └── static/              # Built frontend
 │   └── __init__.py
 ├── frontend/
@@ -164,6 +197,24 @@ A single-user email client running on a remote server (Tailscale private network
 - `DELETE /api/templates/:id` - Delete template
 - `POST /api/templates/:id/test` - Test template
 
+### Connections
+- `GET /api/connections` - List connections
+- `POST /api/connections` - Create connection
+- `GET /api/connections/:id` - Get connection
+- `PUT /api/connections/:id` - Update connection
+- `DELETE /api/connections/:id` - Delete connection
+- `POST /api/connections/:id/test` - Test connection
+
+### Triggers
+- `GET /api/triggers` - List triggers
+- `POST /api/triggers` - Create trigger
+- `GET /api/triggers/:id` - Get trigger
+- `PUT /api/triggers/:id` - Update trigger
+- `DELETE /api/triggers/:id` - Delete trigger
+- `POST /api/triggers/:id/test` - Test trigger
+- `GET /api/triggers/:id/logs` - Get trigger execution logs
+- `GET /api/trigger-logs` - List all trigger logs
+
 ## Running the Application
 
 ### Setup
@@ -223,3 +274,7 @@ QUART_DB_PATH=./data.db QUART_SECRET_KEY=<secret> QUART_USER_PASSWORD_HASH=<hash
 - Email sync runs as background tasks
 - HTML emails are rendered in sandboxed iframes
 - Template matching uses priority: explicit → exact subject → catch-all
+- Connections store API endpoints and headers with encrypted values
+- Triggers execute automatically when emails are parsed and match templates
+- Trigger execution is logged with detailed status and response information
+- Field mapping supports complex data transformations between email data and API payloads

@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     # Check for required environment variables
     if not os.environ.get("QUART_SECRET_KEY"):
-        print("Warning: QUART_SECRET_KEY not set. Using default 'dev-secret-key-change-in-production'.")
+        print("Warning: QUART_SECRET_KEY not set. This is required for secure sessions.")
 
     if not os.environ.get("QUART_USER_PASSWORD_HASH"):
         print("Warning: QUART_USER_PASSWORD_HASH not set. Authentication will fail.")
