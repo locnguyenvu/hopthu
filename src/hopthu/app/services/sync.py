@@ -1,7 +1,6 @@
 """Email sync service for fetching emails from IMAP."""
 
-import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime
 from email import message_from_bytes
 from email.header import decode_header
 from email.utils import parsedate_to_datetime, parseaddr
@@ -173,7 +172,7 @@ async def sync_account(account_id: int) -> dict:
                     try:
                         received_at = parsedate_to_datetime(date_header)
                         received_at = received_at.astimezone(app_tz)
-                    except:
+                    except (TypeError, ValueError):
                         received_at = datetime.now(app_tz)
 
                     # Extract to_email using parseaddr
@@ -222,7 +221,7 @@ async def sync_account(account_id: int) -> dict:
         # Logout
         try:
             await client.logout()
-        except:
+        except Exception:
             pass
 
         return {

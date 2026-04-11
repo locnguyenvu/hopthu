@@ -4,7 +4,7 @@ from pathlib import Path
 
 from quart import Quart, send_from_directory
 
-from hopthu.app import config
+from hopthu.app import config as config
 from hopthu.app.routes.auth import login_required
 
 
@@ -18,7 +18,6 @@ def create_app():
 
     # Configure secret key for sessions
     app.config.from_prefixed_env()
-    # app.config["SECRET_KEY"] = config.QUART_SECRET_KEY
 
     # Import and register blueprints
     from hopthu.app.routes.auth import bp as auth_bp
@@ -65,7 +64,7 @@ def create_app():
             # This should already be handled by the specific routes above
             from quart import abort
             abort(404)
-        
+
         index_file = static_folder / "index.html"
         if index_file.exists():
             return await send_from_directory(static_folder, "index.html")

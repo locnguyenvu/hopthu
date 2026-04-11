@@ -7,7 +7,7 @@ from sqlalchemy import select, desc
 from hopthu.app.db import AsyncSession
 from hopthu.app.models import Trigger, Connection, Template, TriggerLog
 from hopthu.app.routes.auth import api_login_required
-from hopthu.app.services.trigger import build_payload, execute_trigger
+from hopthu.app.services.trigger import build_payload
 
 bp = Blueprint("triggers", __name__)
 

@@ -8,7 +8,7 @@ from sqlalchemy import select, desc, and_
 from hopthu.app.db import AsyncSession
 from hopthu.app.models import Email, EmailData
 from hopthu.app.routes.auth import api_login_required
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy.orm import selectinload
 from hopthu.app.services.sync import sync_account, sync_all
 
 bp = Blueprint("emails", __name__)
@@ -59,13 +59,13 @@ async def list_emails():
             try:
                 dt = datetime.fromisoformat(date_from)
                 filters.append(Email.received_at >= dt)
-            except:
+            except ValueError:
                 pass
         if date_to:
             try:
                 dt = datetime.fromisoformat(date_to)
                 filters.append(Email.received_at <= dt)
-            except:
+            except ValueError:
                 pass
 
         if filters:
