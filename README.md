@@ -12,7 +12,7 @@ With this project the parser is manage dynamically via [docthu](https://github.c
 
 - Built with various AI models:
 
-  * Planing: Sonnet 4.6 / Qwen Plus 3.5 ( plan files ./docs/plan )
+  * Planing: Sonnet 4.6 / Qwen Plus 3.5 ( [plan files](./docs/plan) )
   * Coding: Kimi-2.5, Minimax 2.5, GML 5, Qwen coder 3.5
 
 - Tool: [QWEN-code](https://github.com/QwenLM/qwen-code)

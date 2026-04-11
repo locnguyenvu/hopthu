@@ -5,7 +5,6 @@ from functools import wraps
 from quart import Blueprint, request, session, redirect, render_template_string
 from werkzeug.security import check_password_hash
 
-from hopthu.app import config
 from quart import current_app
 
 bp = Blueprint("auth", __name__)

@@ -2,7 +2,7 @@
 
 import aiohttp
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import select
 
@@ -267,7 +267,7 @@ async def run_triggers_for_email(email_id: int) -> list:
         result = await session.execute(
             select(Trigger).where(
                 Trigger.template_id == email_data.template_id,
-                Trigger.is_active == True
+                Trigger.is_active
             )
         )
         triggers = result.scalars().all()
