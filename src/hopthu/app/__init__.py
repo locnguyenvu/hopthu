@@ -37,12 +37,35 @@ def create_app():
     app.register_blueprint(connections_bp)
     app.register_blueprint(triggers_bp)
 
-    # Serve index.html for all non-API, non-login routes (SPA catch-all)
+    # Serve static files without authentication
+    @app.route('/assets/<path:filename>')
+    async def assets(filename):
+        """Serve static assets without authentication."""
+        return await send_from_directory(static_folder / "assets", filename)
+
+    # Serve other static files without authentication
+    @app.route('/favicon.ico')
+    async def favicon():
+        """Serve favicon without authentication."""
+        return await send_from_directory(static_folder, "favicon.ico")
+
+    @app.route('/icons.svg')
+    async def icons():
+        """Serve icons without authentication."""
+        return await send_from_directory(static_folder, "icons.svg")
+
+    # Serve index.html for all non-API, non-login, non-static routes (SPA catch-all)
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
     @login_required
     async def catch_all(path):
-        """Serve the SPA for all routes."""
+        """Serve the SPA for all routes that are not static assets."""
+        # Skip authentication for static asset requests
+        if path.startswith("assets/") or path.startswith("static/") or '.' in path.split('/')[-1]:
+            # This should already be handled by the specific routes above
+            from quart import abort
+            abort(404)
+        
         index_file = static_folder / "index.html"
         if index_file.exists():
             return await send_from_directory(static_folder, "index.html")
