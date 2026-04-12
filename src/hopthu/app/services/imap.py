@@ -6,7 +6,9 @@ import re
 from aioimaplib import aioimaplib
 
 
-async def test_connection(host: str, port: int, is_ssl: bool, email: str, password: str) -> tuple[bool, str]:
+async def test_connection(
+    host: str, port: int, is_ssl: bool, email: str, password: str
+) -> tuple[bool, str]:
     """
     Test IMAP connection with provided credentials.
 
@@ -39,7 +41,9 @@ async def test_connection(host: str, port: int, is_ssl: bool, email: str, passwo
         return False, f"Connection failed: {str(e)}"
 
 
-async def fetch_mailboxes(host: str, port: int, is_ssl: bool, email: str, password: str) -> tuple[list[str], str]:
+async def fetch_mailboxes(
+    host: str, port: int, is_ssl: bool, email: str, password: str
+) -> tuple[list[str], str]:
     """
     Fetch list of mailboxes/folders from IMAP server.
 
@@ -69,8 +73,8 @@ async def fetch_mailboxes(host: str, port: int, is_ssl: bool, email: str, passwo
         # Parse mailbox names from response
         mailboxes = []
         for line in response.lines:
-            decoded = line.decode('utf-8', errors='ignore')
-            if not re.match(r'^\(\\.*\)', decoded):
+            decoded = line.decode("utf-8", errors="ignore")
+            if not re.match(r"^\(\\.*\)", decoded):
                 continue
             mailboxes.append(decoded.split()[-1])
 

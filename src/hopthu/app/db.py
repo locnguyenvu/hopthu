@@ -1,4 +1,5 @@
 """Database setup with SQLAlchemy async engine and session."""
+
 import os
 
 from sqlalchemy import event

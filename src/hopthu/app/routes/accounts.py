@@ -30,7 +30,9 @@ def error_response(message):
 async def list_accounts():
     """List all accounts."""
     async with AsyncSession() as session:
-        result = await session.execute(select(Account).order_by(Account.created_at.desc()))
+        result = await session.execute(
+            select(Account).order_by(Account.created_at.desc())
+        )
         accounts = result.scalars().all()
         return success_response([a.to_dict() for a in accounts])
 
@@ -108,7 +110,11 @@ async def update_account(id):
         # If password is provided, test and encrypt it
         if "password" in data and data["password"]:
             success, message = await test_connection(
-                account.host, account.port, account.is_ssl, account.email, data["password"]
+                account.host,
+                account.port,
+                account.is_ssl,
+                account.email,
+                data["password"],
             )
             if not success:
                 return error_response(f"Connection test failed: {message}"), 400

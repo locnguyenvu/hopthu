@@ -61,7 +61,6 @@ async def find_matching_templates(from_email: str) -> list[Template]:
         return sorted(templates, key=sort_key)
 
 
-
 def parse_email(template: Template, email_body: str, content_type: str) -> dict | None:
     """
     Parse an email using docthu template.
@@ -72,8 +71,9 @@ def parse_email(template: Template, email_body: str, content_type: str) -> dict 
     if docthu_parse is None:
         # Fallback: simple string replacement
         import re
+
         # Extract fields using {{field_name}} pattern
-        pattern = r'\{\{(\w+)\}\}'
+        pattern = r"\{\{(\w+)\}\}"
         field_names = re.findall(pattern, template.template)
 
         if not field_names:
@@ -84,8 +84,7 @@ def parse_email(template: Template, email_body: str, content_type: str) -> dict 
         escaped_template = re.escape(template.template)
         for field in field_names:
             escaped_template = escaped_template.replace(
-                re.escape(f'{{{{{field}}}}}'),
-                r'(.*?)'
+                re.escape(f"{{{{{field}}}}}"), r"(.*?)"
             )
 
         # Match the template against the email body
@@ -103,7 +102,11 @@ def parse_email(template: Template, email_body: str, content_type: str) -> dict 
         return result
 
     try:
-        result = docthu_parse(template.template, email_body, stop_on_filled=[v['name'] for v in template.fields])
+        result = docthu_parse(
+            template.template,
+            email_body,
+            stop_on_filled=[v["name"] for v in template.fields],
+        )
 
         if result:
             # Convert date/datetime objects to ISO format strings for JSON serialization
@@ -114,14 +117,19 @@ def parse_email(template: Template, email_body: str, content_type: str) -> dict 
         return None
 
 
-async def process_email(email_id: int) -> dict:
+async def process_email(email_id: int, connection=None) -> dict:
     """
     Process an email: find matching templates and extract data.
+
+    Args:
+        email_id: ID of the email to process
+        connection: Optional database connection to use instead of creating a new session
 
     Returns:
         Dict with extraction results
     """
-    async with AsyncSession() as session:
+
+    async def _process_with_session(session):
         # Get email
         result = await session.execute(select(Email).where(Email.id == email_id))
         email = result.scalar_one_or_none()
@@ -171,8 +179,10 @@ async def process_email(email_id: int) -> dict:
 
                 # Run triggers for the extracted email
                 from hopthu.app.services.trigger import run_triggers_for_email
+
                 try:
-                    await run_triggers_for_email(email_id)
+                    # Pass the session/connection to trigger execution if available
+                    await run_triggers_for_email(email_id, connection=session)
                 except Exception as e:
                     # Log error but don't fail the extraction
                     print(f"Trigger execution error: {e}")
@@ -185,3 +195,11 @@ async def process_email(email_id: int) -> dict:
 
         # No template matched
         return {"error": "No template matched the email content"}
+
+    if connection is not None:
+        # Use the provided connection
+        return await _process_with_session(connection)
+    else:
+        # Create a new session
+        async with AsyncSession() as session:
+            return await _process_with_session(session)

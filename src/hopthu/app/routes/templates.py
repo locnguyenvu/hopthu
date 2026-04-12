@@ -32,10 +32,14 @@ async def list_templates():
     """List all templates."""
     async with AsyncSession() as session:
         result = await session.execute(
-            select(Template).order_by(Template.from_email, Template.priority, Template.created_at)
+            select(Template).order_by(
+                Template.from_email, Template.priority, Template.created_at
+            )
         )
         templates = result.scalars().all()
-        return success_response([{k: v for k, v in t.to_dict().items() if k != "fields"} for t in templates])
+        return success_response(
+            [{k: v for k, v in t.to_dict().items() if k != "fields"} for t in templates]
+        )
 
 
 @bp.route("/api/templates/extract-fields", methods=["POST"])

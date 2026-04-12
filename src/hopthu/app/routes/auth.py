@@ -90,21 +90,25 @@ LOGIN_TEMPLATE = """
 
 def login_required(f):
     """Decorator to protect routes that require authentication."""
+
     @wraps(f)
     async def decorated_function(*args, **kwargs):
         if "user" not in session:
             return redirect("/login")
         return await f(*args, **kwargs)
+
     return decorated_function
 
 
 def api_login_required(f):
     """Decorator to protect API routes that require authentication."""
+
     @wraps(f)
     async def decorated_function(*args, **kwargs):
         if "user" not in session:
             return {"data": None, "error": {"message": "Unauthorized"}}, 401
         return await f(*args, **kwargs)
+
     return decorated_function
 
 
@@ -121,10 +125,10 @@ async def login():
     data = await request.form
     password = data.get("password", "")
 
-    if not current_app.config['USER_PASSWORD_HASH']:
+    if not current_app.config["USER_PASSWORD_HASH"]:
         return redirect("/login?error=Authentication not configured")
 
-    if check_password_hash(current_app.config['USER_PASSWORD_HASH'], password):
+    if check_password_hash(current_app.config["USER_PASSWORD_HASH"], password):
         session["user"] = "admin"
         return redirect("/")
     else:

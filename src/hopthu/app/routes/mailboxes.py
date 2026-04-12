@@ -66,12 +66,14 @@ async def fetch_mailboxes(account_id):
         # Upsert mailboxes - insert new ones, keep existing ones with their is_active state
         for mailbox_name in mailboxes:
             # Use INSERT OR IGNORE to avoid overwriting existing mailboxes
-            stmt = insert(Mailbox).values(
-                account_id=account_id,
-                name=mailbox_name,
-                is_active=False,
-            ).on_conflict_do_nothing(
-                index_elements=["account_id", "name"]
+            stmt = (
+                insert(Mailbox)
+                .values(
+                    account_id=account_id,
+                    name=mailbox_name,
+                    is_active=False,
+                )
+                .on_conflict_do_nothing(index_elements=["account_id", "name"])
             )
             await session.execute(stmt)
 
