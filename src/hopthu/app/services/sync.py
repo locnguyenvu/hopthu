@@ -39,6 +39,7 @@ async def sync_account(account_id: int) -> dict:
     async with AsyncSession() as session:
         # Get account
         from sqlalchemy import select
+
         result = await session.execute(select(Account).where(Account.id == account_id))
         account = result.scalar_one_or_none()
 
@@ -48,8 +49,7 @@ async def sync_account(account_id: int) -> dict:
         # Get active mailboxes
         result = await session.execute(
             select(Mailbox).where(
-                Mailbox.account_id == account_id,
-                Mailbox.is_active == 1
+                Mailbox.account_id == account_id, Mailbox.is_active == 1
             )
         )
         mailboxes = result.scalars().all()
@@ -96,17 +96,25 @@ async def sync_account(account_id: int) -> dict:
                 # Parse message IDs
                 message_ids = response.lines[0].decode().split()
                 # Limit to 20 most recent messages
-                message_ids = message_ids[-20:] if len(message_ids) > 20 else message_ids
+                message_ids = (
+                    message_ids[-20:] if len(message_ids) > 20 else message_ids
+                )
 
                 for msg_id in message_ids:
                     # Fetch message headers first to check Message-ID
-                    response = await client.fetch(msg_id, "(BODY.PEEK[HEADER.FIELDS (Message-ID)])")
+                    response = await client.fetch(
+                        msg_id, "(BODY.PEEK[HEADER.FIELDS (Message-ID)])"
+                    )
                     if response.result != "OK":
                         continue
 
                     # Extract Message-ID from headers
                     # Skip IMAP protocol lines (first and last 2 lines)
-                    header_lines = response.lines[1:-2] if len(response.lines) >= 3 else response.lines
+                    header_lines = (
+                        response.lines[1:-2]
+                        if len(response.lines) >= 3
+                        else response.lines
+                    )
                     header_data = b"\n".join(header_lines)
                     msg_header = message_from_bytes(header_data)
                     message_id = msg_header.get("Message-ID", "").strip()
@@ -119,7 +127,7 @@ async def sync_account(account_id: int) -> dict:
                     result = await session.execute(
                         select(Email).where(
                             Email.account_id == account_id,
-                            Email.message_id == message_id
+                            Email.message_id == message_id,
                         )
                     )
                     if result.scalar_one_or_none():
@@ -153,19 +161,35 @@ async def sync_account(account_id: int) -> dict:
                                 content_type = ct
                                 try:
                                     payload = part.get_payload(decode=True)
-                                    body = payload.decode("utf-8", errors="ignore") if payload else ""
+                                    body = (
+                                        payload.decode("utf-8", errors="ignore")
+                                        if payload
+                                        else ""
+                                    )
                                 except Exception:
                                     payload = part.get_payload(decode=True)
-                                    body = payload.decode("latin-1", errors="ignore") if payload else ""
+                                    body = (
+                                        payload.decode("latin-1", errors="ignore")
+                                        if payload
+                                        else ""
+                                    )
                                 break
                     else:
                         content_type = msg.get_content_type()
                         try:
                             payload = msg.get_payload(decode=True)
-                            body = payload.decode("utf-8", errors="ignore") if payload else ""
+                            body = (
+                                payload.decode("utf-8", errors="ignore")
+                                if payload
+                                else ""
+                            )
                         except Exception:
                             payload = msg.get_payload(decode=True)
-                            body = payload.decode("latin-1", errors="ignore") if payload else ""
+                            body = (
+                                payload.decode("latin-1", errors="ignore")
+                                if payload
+                                else ""
+                            )
 
                     # Parse date header
                     date_header = msg.get("Date")
@@ -207,7 +231,8 @@ async def sync_account(account_id: int) -> dict:
                     # Process the email for data extraction
                     try:
                         from hopthu.app.services.parser import process_email
-                        await process_email(email.id)
+
+                        await process_email(email.id, connection=session)
                     except Exception as e:
                         print(f"Error processing email {email.id}: {e}")
                         # Continue syncing other emails even if processing fails
@@ -239,6 +264,7 @@ async def sync_all() -> dict:
     """
     async with AsyncSession() as session:
         from sqlalchemy import select
+
         result = await session.execute(select(Account))
         accounts = result.scalars().all()
 

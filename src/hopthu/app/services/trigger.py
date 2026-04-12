@@ -8,18 +8,21 @@ from sqlalchemy import select
 
 from hopthu.app import config
 from hopthu.app.db import AsyncSession
-from hopthu.app.models import Trigger, Connection, TriggerLog, Email, EmailData, EMAIL_STATUS_PUSHED
+from hopthu.app.models import (
+    Trigger,
+    Connection,
+    TriggerLog,
+    Email,
+    EmailData,
+    EMAIL_STATUS_PUSHED,
+)
 
 
 # Sentinel value for "path not found"
 _NOT_FOUND = object()
 
 
-def resolve_source_value(
-    source_path: str,
-    extracted_data: dict,
-    email: dict
-) -> Any:
+def resolve_source_value(source_path: str, extracted_data: dict, email: dict) -> Any:
     """
     Resolve a source path to its value.
 
@@ -56,11 +59,7 @@ def resolve_source_value(
     return data
 
 
-def build_payload(
-    field_mappings: list,
-    extracted_data: dict,
-    email: dict
-) -> dict:
+def build_payload(field_mappings: list, extracted_data: dict, email: dict) -> dict:
     """
     Build a request payload from field mappings.
 
@@ -106,9 +105,7 @@ def build_payload(
 
 
 async def execute_trigger(
-    trigger: Trigger,
-    email_data: EmailData,
-    email: Email
+    trigger: Trigger, email_data: EmailData, email: Email
 ) -> TriggerLog:
     """
     Execute a trigger for an email.
@@ -140,7 +137,7 @@ async def execute_trigger(
             response_status=None,
             response_body=None,
             status="failed",
-            executed_at=datetime.utcnow()
+            executed_at=datetime.utcnow(),
         )
         return log
 
@@ -159,16 +156,12 @@ async def execute_trigger(
         "status": email.status,
     }
 
-    payload = build_payload(
-        trigger.field_mappings or [],
-        extracted_data,
-        email_dict
-    )
+    payload = build_payload(trigger.field_mappings or [], extracted_data, email_dict)
 
     # Build headers - decrypt encrypted values
     headers = {}
     masked_headers = {}
-    for h in (connection.headers or []):
+    for h in connection.headers or []:
         key = h.get("key")
         value = h.get("value", "")
         encrypted = h.get("encrypted", False)
@@ -200,7 +193,7 @@ async def execute_trigger(
                 url=url,
                 headers=headers,
                 json=payload if method in ["POST", "PUT"] else None,
-                timeout=aiohttp.ClientTimeout(total=30)
+                timeout=aiohttp.ClientTimeout(total=30),
             ) as response:
                 response_status = response.status
                 try:
@@ -228,27 +221,27 @@ async def execute_trigger(
         response_status=response_status,
         response_body=response_body,
         status=status,
-        executed_at=executed_at
+        executed_at=executed_at,
     )
 
     return log
 
 
-async def run_triggers_for_email(email_id: int) -> list:
+async def run_triggers_for_email(email_id: int, connection=None) -> list:
     """
     Find and execute all active triggers for an email.
 
     Args:
         email_id: The ID of the extracted email
+        connection: Optional database connection to use instead of creating a new session
 
     Returns:
         List of TriggerLog instances
     """
-    async with AsyncSession() as session:
+
+    async def _run_triggers_with_session(session):
         # Get the email and its extracted data
-        result = await session.execute(
-            select(Email).where(Email.id == email_id)
-        )
+        result = await session.execute(select(Email).where(Email.id == email_id))
         email = result.scalar_one_or_none()
 
         if not email:
@@ -266,8 +259,7 @@ async def run_triggers_for_email(email_id: int) -> list:
         # Find all active triggers for the template
         result = await session.execute(
             select(Trigger).where(
-                Trigger.template_id == email_data.template_id,
-                Trigger.is_active
+                Trigger.template_id == email_data.template_id, Trigger.is_active
             )
         )
         triggers = result.scalars().all()
@@ -286,3 +278,11 @@ async def run_triggers_for_email(email_id: int) -> list:
         await session.commit()
 
         return logs
+
+    if connection is not None:
+        # Use the provided connection
+        return await _run_triggers_with_session(connection)
+    else:
+        # Create a new session
+        async with AsyncSession() as session:
+            return await _run_triggers_with_session(session)

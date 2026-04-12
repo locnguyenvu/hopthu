@@ -50,7 +50,9 @@ async def get_trigger_count(connection_id):
 async def list_connections():
     """List all connections."""
     async with AsyncSession() as session:
-        result = await session.execute(select(Connection).order_by(Connection.created_at.desc()))
+        result = await session.execute(
+            select(Connection).order_by(Connection.created_at.desc())
+        )
         connections = result.scalars().all()
 
         # Add trigger count to each connection
@@ -110,11 +112,13 @@ async def create_connection():
     # Normalize fields - set defaults
     normalized_fields = []
     for f in fields:
-        normalized_fields.append({
-            "name": f.get("name"),
-            "type": f.get("type", "string"),
-            "required": f.get("required", False)
-        })
+        normalized_fields.append(
+            {
+                "name": f.get("name"),
+                "type": f.get("type", "string"),
+                "required": f.get("required", False),
+            }
+        )
 
     # Create connection
     async with AsyncSession() as session:
@@ -166,10 +170,14 @@ async def update_connection(id):
         if "name" in data:
             # Check for duplicate name (excluding current)
             result = await session.execute(
-                select(Connection).where(Connection.name == data["name"], Connection.id != id)
+                select(Connection).where(
+                    Connection.name == data["name"], Connection.id != id
+                )
             )
             if result.scalar_one_or_none():
-                return error_response(f"Connection '{data['name']}' already exists"), 400
+                return error_response(
+                    f"Connection '{data['name']}' already exists"
+                ), 400
             connection.name = data["name"]
 
         if "endpoint" in data:
@@ -188,8 +196,12 @@ async def update_connection(id):
                     if h.get("value") == "••••••" or not h.get("value"):
                         # Keep existing encrypted value (find it in current headers)
                         existing = next(
-                            (eh for eh in connection.headers if eh.get("key") == h.get("key")),
-                            None
+                            (
+                                eh
+                                for eh in connection.headers
+                                if eh.get("key") == h.get("key")
+                            ),
+                            None,
                         )
                         if existing:
                             header["value"] = existing.get("value")
@@ -212,11 +224,13 @@ async def update_connection(id):
                 return error_response(msg), 400
             normalized_fields = []
             for f in data["fields"]:
-                normalized_fields.append({
-                    "name": f.get("name"),
-                    "type": f.get("type", "string"),
-                    "required": f.get("required", False)
-                })
+                normalized_fields.append(
+                    {
+                        "name": f.get("name"),
+                        "type": f.get("type", "string"),
+                        "required": f.get("required", False),
+                    }
+                )
             connection.fields = normalized_fields
 
         await session.commit()
@@ -283,7 +297,7 @@ async def test_connection(id):
                 method=connection.method,
                 url=connection.endpoint,
                 headers=headers,
-                timeout=aiohttp.ClientTimeout(total=10)
+                timeout=aiohttp.ClientTimeout(total=10),
             ) as response:
                 response_status = response.status
                 response_body = await response.text()
@@ -292,11 +306,13 @@ async def test_connection(id):
                 if len(response_body) > 1000:
                     response_body = response_body[:1000] + "..."
 
-                return success_response({
-                    "response_status": response_status,
-                    "response_body": response_body,
-                    "success": response_status < 400
-                })
+                return success_response(
+                    {
+                        "response_status": response_status,
+                        "response_body": response_body,
+                        "success": response_status < 400,
+                    }
+                )
 
     except Exception as e:
         return error_response(f"Request failed: {str(e)}"), 400

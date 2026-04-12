@@ -94,7 +94,7 @@ async def list_emails():
                 "page": page,
                 "per_page": per_page,
                 "total": total,
-            }
+            },
         )
 
 
@@ -106,9 +106,7 @@ async def get_email(id):
         result = await session.execute(
             select(Email)
             .where(Email.id == id)
-            .options(
-                selectinload(Email.email_data).joinedload(EmailData.template)
-            )
+            .options(selectinload(Email.email_data).joinedload(EmailData.template))
         )
         email = result.scalar_one_or_none()
 
@@ -121,7 +119,11 @@ async def get_email(id):
         # Include email_data if exists
         if email.email_data:
             data["email_data"] = email.email_data.to_dict()
-            data["email_data"]["template"] = email.email_data.template.to_dict() if email.email_data.template else None
+            data["email_data"]["template"] = (
+                email.email_data.template.to_dict()
+                if email.email_data.template
+                else None
+            )
 
         return success_response(data)
 

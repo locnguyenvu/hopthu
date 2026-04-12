@@ -56,7 +56,9 @@ async def list_triggers():
                 select(Template).where(Template.id == trigger.template_id)
             )
             template = template_result.scalar_one_or_none()
-            trigger_dict["template_from_email"] = template.from_email if template else None
+            trigger_dict["template_from_email"] = (
+                template.from_email if template else None
+            )
 
             data.append(trigger_dict)
 
@@ -127,18 +129,24 @@ async def get_trigger(id):
             select(Connection).where(Connection.id == trigger.connection_id)
         )
         connection = conn_result.scalar_one_or_none()
-        trigger_dict["connection"] = connection.to_dict(mask_secrets=True) if connection else None
+        trigger_dict["connection"] = (
+            connection.to_dict(mask_secrets=True) if connection else None
+        )
 
         # Get template details
         template_result = await session.execute(
             select(Template).where(Template.id == trigger.template_id)
         )
         template = template_result.scalar_one_or_none()
-        trigger_dict["template"] = {
-            "id": template.id,
-            "from_email": template.from_email,
-            "subject": template.subject,
-        } if template else None
+        trigger_dict["template"] = (
+            {
+                "id": template.id,
+                "from_email": template.from_email,
+                "subject": template.subject,
+            }
+            if template
+            else None
+        )
 
         return success_response(trigger_dict)
 
@@ -238,16 +246,17 @@ async def test_trigger(id):
 
     # Use provided sample data or empty defaults
     sample_extracted_data = data.get("extracted_data", {})
-    sample_email = data.get("email", {
-        "received_at": datetime.utcnow().isoformat(),
-        "from_email": "test@example.com",
-    })
+    sample_email = data.get(
+        "email",
+        {
+            "received_at": datetime.utcnow().isoformat(),
+            "from_email": "test@example.com",
+        },
+    )
 
     # Build the payload
     payload = build_payload(
-        trigger.field_mappings or [],
-        sample_extracted_data,
-        sample_email
+        trigger.field_mappings or [], sample_extracted_data, sample_email
     )
 
     # Import execute functionality
@@ -257,7 +266,7 @@ async def test_trigger(id):
     # Build headers - decrypt encrypted values
     headers = {}
     masked_headers = {}
-    for h in (connection.headers or []):
+    for h in connection.headers or []:
         key = h.get("key")
         value = h.get("value", "")
         encrypted = h.get("encrypted", False)
@@ -284,7 +293,7 @@ async def test_trigger(id):
                 url=url,
                 headers=headers,
                 json=payload if method in ["POST", "PUT"] else None,
-                timeout=aiohttp.ClientTimeout(total=30)
+                timeout=aiohttp.ClientTimeout(total=30),
             ) as response:
                 response_status = response.status
                 try:
@@ -294,15 +303,17 @@ async def test_trigger(id):
                 except Exception:
                     response_body = None
 
-                return success_response({
-                    "request_url": url,
-                    "request_method": method,
-                    "request_headers": masked_headers,
-                    "request_body": payload,
-                    "response_status": response_status,
-                    "response_body": response_body,
-                    "success": response_status < 400
-                })
+                return success_response(
+                    {
+                        "request_url": url,
+                        "request_method": method,
+                        "request_headers": masked_headers,
+                        "request_body": payload,
+                        "response_status": response_status,
+                        "response_body": response_body,
+                        "success": response_status < 400,
+                    }
+                )
 
     except Exception as e:
         return error_response(f"Request failed: {str(e)}"), 400
@@ -333,6 +344,7 @@ async def get_trigger_logs(id):
 
         # Get total count
         from sqlalchemy import func
+
         count_result = await session.execute(
             select(func.count(TriggerLog.id)).where(TriggerLog.trigger_id == id)
         )
@@ -340,12 +352,9 @@ async def get_trigger_logs(id):
 
         data = [log.to_dict() for log in logs]
 
-        return success_response({
-            "logs": data,
-            "total": total,
-            "limit": limit,
-            "offset": offset
-        })
+        return success_response(
+            {"logs": data, "total": total, "limit": limit, "offset": offset}
+        )
 
 
 @bp.route("/api/trigger-logs", methods=["GET"])
@@ -375,6 +384,7 @@ async def list_all_trigger_logs():
 
         # Get total count
         from sqlalchemy import func
+
         count_query = select(func.count(TriggerLog.id))
         if trigger_id:
             count_query = count_query.where(TriggerLog.trigger_id == trigger_id)
@@ -400,9 +410,6 @@ async def list_all_trigger_logs():
 
             data.append(log_dict)
 
-        return success_response({
-            "logs": data,
-            "total": total,
-            "limit": limit,
-            "offset": offset
-        })
+        return success_response(
+            {"logs": data, "total": total, "limit": limit, "offset": offset}
+        )
