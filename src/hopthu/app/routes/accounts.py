@@ -147,7 +147,6 @@ async def update_account_password(id):
 
         # Update the password
         account.credential = config.encrypt_credential(data["password"])
-
         await session.commit()
         await session.refresh(account)
 
@@ -169,5 +168,3 @@ async def delete_account(id):
         await session.commit()
 
         return success_response({"deleted": True})
-
-
