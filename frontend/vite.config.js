@@ -6,6 +6,12 @@ import { DEFAULT_TIMEZONE } from './src/constants.js'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [preact(), tailwindcss()],
+  resolve: {
+    alias: {
+      'react': 'preact/compat',
+      'react-dom': 'preact/compat',
+    },
+  },
   define: {
     'APP_TZ': JSON.stringify(process.env.QUART_TZ || DEFAULT_TIMEZONE)
   },
