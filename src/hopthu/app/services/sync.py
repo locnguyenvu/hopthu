@@ -47,7 +47,6 @@ async def sync_account(account_id: int) -> dict:
         if not account:
             return {"error": "Account not found"}
 
-        # Get active mailboxes
         result = await session.execute(
             select(Mailbox).where(
                 Mailbox.account_id == account_id, Mailbox.is_active == 1
@@ -79,40 +78,32 @@ async def sync_account(account_id: int) -> dict:
         total_synced = 0
         total_skipped = 0
 
-        # Use account timezone if specified, otherwise use app timezone
         app_tz =  ZoneInfo(current_app.config['TZ'])
-        account_tz = ZoneInfo(account.timezone) if account.timezone else ZoneInfo(current_app.config['TZ'])
+        account_tz = ZoneInfo(account.timezone) if account.timezone else app_tz
 
         for mailbox in mailboxes:
             try:
-                # Select mailbox
                 response = await client.select(mailbox.name)
                 if response.result != "OK":
                     continue
 
-                # Search for messages from today using account timezone
                 today = datetime.now(account_tz).strftime("%d-%b-%Y")
                 response = await client.search(f"SINCE {today}")
                 if response.result != "OK":
                     continue
 
-                # Parse message IDs
                 message_ids = response.lines[0].decode().split()
-                # Limit to 20 most recent messages
                 message_ids = (
                     message_ids[-20:] if len(message_ids) > 20 else message_ids
                 )
 
                 for msg_id in message_ids:
-                    # Fetch message headers first to check Message-ID
                     response = await client.fetch(
                         msg_id, "(BODY.PEEK[HEADER.FIELDS (Message-ID)])"
                     )
                     if response.result != "OK":
                         continue
 
-                    # Extract Message-ID from headers
-                    # Skip IMAP protocol lines (first and last 2 lines)
                     header_lines = (
                         response.lines[1:-2]
                         if len(response.lines) >= 3
@@ -137,7 +128,6 @@ async def sync_account(account_id: int) -> dict:
                         total_skipped += 1
                         continue
 
-                    # Fetch full message
                     response = await client.fetch(msg_id, "(RFC822)")
                     if response.result != "OK":
                         continue
@@ -153,7 +143,6 @@ async def sync_account(account_id: int) -> dict:
                     msg_data = b"\n".join(msg_lines)
                     msg = message_from_bytes(msg_data)
 
-                    # Extract email content (first text/plain or text/html part)
                     content_type = "text/plain"
                     body = ""
 
@@ -194,7 +183,6 @@ async def sync_account(account_id: int) -> dict:
                                 else ""
                             )
 
-                    # Parse date header
                     date_header = msg.get("Date")
                     try:
                         received_at = parsedate_to_datetime(date_header)
@@ -202,18 +190,14 @@ async def sync_account(account_id: int) -> dict:
                     except (TypeError, ValueError):
                         received_at = datetime.now(app_tz)
 
-                    # Extract to_email using parseaddr
                     to_header = msg.get("To", "")
                     _, to_email = parseaddr(to_header)
 
-                    # Decode subject with utf-8
                     subject = decode_mime_header(msg.get("Subject", ""))
 
-                    # Extract from_email using parseaddr as well
                     from_header = msg.get("From", "")
                     _, from_email = parseaddr(from_header)
 
-                    # Create email record
                     email = Email(
                         account_id=account_id,
                         mailbox_id=mailbox.id,
@@ -228,17 +212,15 @@ async def sync_account(account_id: int) -> dict:
                         received_at=received_at,
                     )
                     session.add(email)
-                    await session.flush()  # Get the email ID
+                    await session.flush()
                     total_synced += 1
 
-                    # Process the email for data extraction
                     try:
                         from hopthu.app.services.parser import process_email
 
                         await process_email(email.id, connection=session)
                     except Exception as e:
                         print(f"Error processing email {email.id}: {e}")
-                        # Continue syncing other emails even if processing fails
 
                 await session.commit()
 
@@ -246,7 +228,6 @@ async def sync_account(account_id: int) -> dict:
                 print(f"Error syncing mailbox {mailbox.name}: {e}")
                 continue
 
-        # Logout
         try:
             await client.logout()
         except Exception:
