@@ -6,6 +6,7 @@ from email.header import decode_header
 from email.utils import parsedate_to_datetime, parseaddr
 from zoneinfo import ZoneInfo
 
+from quart import current_app
 from aioimaplib import aioimaplib
 
 from hopthu.app import config
@@ -78,7 +79,9 @@ async def sync_account(account_id: int) -> dict:
         total_synced = 0
         total_skipped = 0
 
-        app_tz = ZoneInfo(config.QUART_TZ)
+        # Use account timezone if specified, otherwise use app timezone
+        app_tz =  ZoneInfo(current_app.config['TZ'])
+        account_tz = ZoneInfo(account.timezone) if account.timezone else ZoneInfo(current_app.config['TZ'])
 
         for mailbox in mailboxes:
             try:
@@ -87,8 +90,8 @@ async def sync_account(account_id: int) -> dict:
                 if response.result != "OK":
                     continue
 
-                # Search for messages from today
-                today = datetime.now().strftime("%d-%b-%Y")
+                # Search for messages from today using account timezone
+                today = datetime.now(account_tz).strftime("%d-%b-%Y")
                 response = await client.search(f"SINCE {today}")
                 if response.result != "OK":
                     continue

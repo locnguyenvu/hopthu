@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
+import { route } from 'preact-router';
 
 export function AccountDetail({ id }) {
   const [account, setAccount] = useState(null);
@@ -59,7 +60,15 @@ export function AccountDetail({ id }) {
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">{account?.email}</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">{account?.email}</h1>
+        <button
+          onClick={() => route(`/accounts/${id}/edit`)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
+        >
+          Edit Account
+        </button>
+      </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-semibold mb-4">Mailboxes</h2>

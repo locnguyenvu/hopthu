@@ -135,6 +135,7 @@ async def login():
         return redirect("/login?error=Invalid password")
 
 
+
 @bp.route("/api/auth/logout", methods=["POST"])
 async def logout():
     """Clear the user session."""

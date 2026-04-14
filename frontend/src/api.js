@@ -43,13 +43,13 @@ export const api = {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
+  updateAccountPassword: (id, data) => request(`/api/accounts/${id}/password`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
   deleteAccount: (id) => request(`/api/accounts/${id}`, {
     method: 'DELETE',
   }),
-  testAccount: (id) => request(`/api/accounts/${id}/test`, {
-    method: 'POST',
-  }),
-
   // Mailboxes
   listMailboxes: (accountId) => request(`/api/accounts/${accountId}/mailboxes`),
   fetchMailboxes: (accountId) => request(`/api/accounts/${accountId}/mailboxes/fetch`, {

@@ -7,7 +7,6 @@ export function AccountList() {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [testing, setTesting] = useState(null);
 
   useEffect(() => {
     loadAccounts();
@@ -35,18 +34,7 @@ export function AccountList() {
     }
   };
 
-  const handleTest = async (id) => {
-    setTesting(id);
-    try {
-      const response = await api.testAccount(id);
-      alert(response.data.message);
-    } catch (e) {
-      alert('Connection failed: ' + e.message);
-    } finally {
-      setTesting(null);
-    }
-  };
-
+  
   if (loading) {
     return (
       <Layout>
@@ -128,13 +116,6 @@ export function AccountList() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleTest(account.id)}
-                      disabled={testing === account.id}
-                      className="text-blue-600 hover:text-blue-900 mr-4"
-                    >
-                      {testing === account.id ? 'Testing...' : 'Test'}
-                    </button>
                     <button
                       onClick={() => handleDelete(account.id)}
                       className="text-red-600 hover:text-red-900"
