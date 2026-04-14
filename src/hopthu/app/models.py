@@ -41,6 +41,7 @@ class Account(Base):
     is_ssl = Column(Boolean, nullable=False, default=True)
     authenticated_method = Column(String, nullable=False, default="password")
     credential = Column(String, nullable=False)  # encrypted password
+    timezone = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(
         DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
@@ -62,6 +63,7 @@ class Account(Base):
             "port": self.port,
             "is_ssl": self.is_ssl,
             "authenticated_method": self.authenticated_method,
+            "timezone": self.timezone,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

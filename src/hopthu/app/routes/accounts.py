@@ -56,6 +56,7 @@ async def create_account():
     is_ssl = data.get("is_ssl", True)
     password = data["password"]
     auth_method = data.get("authenticated_method", "password")
+    timezone = data.get("timezone")  # timezone is optional, will default to app timezone
 
     # Test connection before saving
     success, message = await test_connection(host, port, is_ssl, email, password)
@@ -74,6 +75,7 @@ async def create_account():
             is_ssl=is_ssl,
             authenticated_method=auth_method,
             credential=encrypted_credential,
+            timezone=timezone,
         )
         session.add(account)
         await session.commit()
@@ -95,7 +97,7 @@ async def update_account(id):
         if not account:
             return error_response("Account not found"), 404
 
-        # Update fields
+        # Update fields (excluding password)
         if "email" in data:
             account.email = data["email"]
         if "host" in data:
@@ -106,20 +108,45 @@ async def update_account(id):
             account.is_ssl = data["is_ssl"]
         if "authenticated_method" in data:
             account.authenticated_method = data["authenticated_method"]
+        if "timezone" in data:
+            account.timezone = data["timezone"]
 
-        # If password is provided, test and encrypt it
-        if "password" in data and data["password"]:
-            success, message = await test_connection(
-                account.host,
-                account.port,
-                account.is_ssl,
-                account.email,
-                data["password"],
-            )
-            if not success:
-                return error_response(f"Connection test failed: {message}"), 400
-            account.credential = config.encrypt_credential(data["password"])
+        await session.commit()
+        await session.refresh(account)
 
+        return success_response(account.to_dict())
+
+
+@bp.route("/api/accounts/<int:id>/password", methods=["PUT"])
+@api_login_required
+async def update_account_password(id):
+    """Update an account's password."""
+    data = await request.get_json()
+
+    async with AsyncSession() as session:
+        result = await session.execute(select(Account).where(Account.id == id))
+        account = result.scalar_one_or_none()
+
+        if not account:
+            return error_response("Account not found"), 404
+
+        # Expect password in the data
+        if "password" not in data or not data["password"]:
+            return error_response("Password is required"), 400
+
+        # Test connection with the new password
+        success, message = await test_connection(
+            account.host,
+            account.port,
+            account.is_ssl,
+            account.email,
+            data["password"],
+        )
+        if not success:
+            return error_response(f"Connection test failed: {message}"), 400
+
+        # Update the password
+        account.credential = config.encrypt_credential(data["password"])
         await session.commit()
         await session.refresh(account)
 
@@ -141,30 +168,3 @@ async def delete_account(id):
         await session.commit()
 
         return success_response({"deleted": True})
-
-
-@bp.route("/api/accounts/<int:id>/test", methods=["POST"])
-@api_login_required
-async def test_account_connection(id):
-    """Test IMAP connection for an account."""
-    async with AsyncSession() as session:
-        result = await session.execute(select(Account).where(Account.id == id))
-        account = result.scalar_one_or_none()
-
-        if not account:
-            return error_response("Account not found"), 404
-
-        # Decrypt password and test
-        try:
-            password = config.decrypt_credential(account.credential)
-        except Exception as e:
-            return error_response(f"Failed to decrypt credential: {str(e)}"), 500
-
-        success, message = await test_connection(
-            account.host, account.port, account.is_ssl, account.email, password
-        )
-
-        if success:
-            return success_response({"connected": True, "message": message})
-        else:
-            return error_response(message), 400

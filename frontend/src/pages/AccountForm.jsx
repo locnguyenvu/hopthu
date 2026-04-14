@@ -1,19 +1,53 @@
-import { useState } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
 
-export function AccountForm() {
+export function AccountForm({ id }) {
   const [form, setForm] = useState({
     email: '',
     host: '',
     port: 993,
     is_ssl: true,
     password: '',
+    timezone: APP_TZ,
   });
+  const [appTimezone, setAppTimezone] = useState(APP_TZ);
+  const [loading, setLoading] = useState(true); // Start with loading state
+  const isEdit = Boolean(id);
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  // Initialize form and load account details if editing
+  useEffect(() => {
+    const loadAccountDetails = async () => {
+      if (isEdit) {
+        try {
+          // If editing, load the account details
+          const accounts = await api.listAccounts();
+          const account = accounts.data.find(acc => acc.id == id);
+          if (account) {
+            // Don't include password when loading for editing
+            setForm({
+              email: account.email,
+              host: account.host,
+              port: account.port,
+              is_ssl: account.is_ssl,
+              timezone: account.timezone || APP_TZ,
+              password: '', // Don't populate password field for security reasons
+            });
+          }
+        } catch (err) {
+          setError(err.message);
+        }
+      }
+      // Stop showing loading state after initialization
+      setLoading(false);
+    };
+
+    loadAccountDetails();
+  }, [id, isEdit]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -24,18 +58,30 @@ export function AccountForm() {
   };
 
   const handleTest = async () => {
-    if (!form.email || !form.host || !form.password) {
-      setError('Please fill in email, host, and password');
+    if (!form.email || !form.host) {
+      setError('Please fill in email and host');
       return;
     }
+    
     setTesting(true);
     setError(null);
     try {
-      // Create a temporary account to test
-      await api.createAccount(form);
-      // If we get here, connection succeeded but we don't want to save yet
-      // Actually, the API saves on success, so just go to accounts list
-      route('/accounts');
+      if (isEdit) {
+        // For editing, only test if a new password is provided
+        if (!form.password) {
+          setError('Enter a new password to test connection');
+          return;
+        }
+        await api.updateAccountPassword(id, { password: form.password });
+      } else {
+        // For creating, password is required
+        if (!form.password) {
+          setError('Password is required when creating an account');
+          return;
+        }
+        await api.createAccount(form);
+      }
+      alert('Connection successful!');
     } catch (e) {
       setError(e.message);
     } finally {
@@ -48,7 +94,21 @@ export function AccountForm() {
     setSaving(true);
     setError(null);
     try {
-      await api.createAccount(form);
+      if (isEdit) {
+        // For editing, exclude password from the general update
+        const updateData = { ...form };
+        delete updateData.password; // Don't send password with general account update
+        
+        // Update the account details
+        await api.updateAccount(id, updateData);
+        
+        // If password was provided, update it separately
+        if (form.password) {
+          await api.updateAccountPassword(id, { password: form.password });
+        }
+      } else {
+        await api.createAccount(form);
+      }
       route('/accounts');
     } catch (e) {
       setError(e.message);
@@ -133,8 +193,26 @@ export function AccountForm() {
           </div>
 
           <div>
+            <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-1">
+              Timezone
+            </label>
+            <input
+              type="text"
+              id="timezone"
+              name="timezone"
+              value={form.timezone}
+              onChange={handleChange}
+              placeholder={`Default: ${APP_TZ}`}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Enter a valid timezone identifier (e.g., Asia/Ho_Chi_Minh, America/New_York, UTC)
+            </p>
+          </div>
+
+          <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
+              {isEdit ? 'Password (leave blank to keep current)' : 'Password *'}
             </label>
             <input
               type="password"
@@ -142,10 +220,15 @@ export function AccountForm() {
               name="password"
               value={form.password}
               onChange={handleChange}
-              required
+              required={!isEdit}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Your email password"
+              placeholder={isEdit ? "Leave blank to keep current password" : "Your email password"}
             />
+            {isEdit && (
+              <p className="mt-1 text-xs text-gray-500">
+                Leave blank to keep the current password unchanged.
+              </p>
+            )}
           </div>
 
           <div className="flex gap-4 pt-4">

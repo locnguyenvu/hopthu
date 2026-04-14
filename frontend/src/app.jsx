@@ -48,6 +48,7 @@ export function App() {
         <Route path="/" component={Inbox} />
         <Route path="/accounts" component={AccountList} />
         <Route path="/accounts/new" component={AccountForm} />
+        <Route path="/accounts/:id/edit" component={AccountForm} />
         <Route path="/accounts/:id" component={AccountDetail} />
         <Route path="/emails/:id" component={EmailDetail} />
         <Route path="/templates" component={TemplateList} />

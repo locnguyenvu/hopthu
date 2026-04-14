@@ -1,10 +1,14 @@
 import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
 import tailwindcss from '@tailwindcss/vite'
+import { DEFAULT_TIMEZONE } from './src/constants.js'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [preact(), tailwindcss()],
+  define: {
+    'APP_TZ': JSON.stringify(process.env.QUART_TZ || DEFAULT_TIMEZONE)
+  },
   base: '/', // Ensure assets are loaded from the correct base path
   build: {
     outDir: '../src/hopthu/app/static',
