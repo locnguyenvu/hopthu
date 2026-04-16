@@ -43,7 +43,7 @@ export function TriggerEditor({ id }) {
       if (preselectedConnectionId) {
         setConnectionId(preselectedConnectionId);
       }
-      
+
       // Check for template_id in URL params (for new triggers from template detail)
       const preselectedTemplateId = urlParams.get('template_id');
       if (preselectedTemplateId) {
@@ -342,9 +342,41 @@ export function TriggerEditor({ id }) {
     );
   }
 
+  // Breadcrumb navigation
+  const renderBreadcrumb = () => {
+    if (!connectionId || !selectedConnection) {
+      return (
+        <nav className="text-sm text-gray-500 mb-4">
+          <a href="/connections" className="hover:text-blue-600">Connections</a>
+          <span className="mx-2">&gt;</span>
+          <span className="text-gray-700">{isEdit ? name || 'Edit Trigger' : 'New Trigger'}</span>
+        </nav>
+      );
+    }
+
+    return (
+      <nav className="text-sm text-gray-500 mb-4">
+        <a href={`/connections/${connectionId}#triggers`} className="hover:text-blue-600">
+          {selectedConnection.name}
+        </a>
+        <span className="mx-2">&gt;</span>
+        <a href={`/connections/${connectionId}#triggers`} className="hover:text-blue-600">Triggers</a>
+        <span className="mx-2">&gt;</span>
+        {isEdit ? (
+          <a href={`/triggers/${id}`} className="text-gray-700 hover:text-blue-600">
+            {name}
+          </a>
+        ) : (
+          <span className="text-gray-700">New Trigger</span>
+        )}
+      </nav>
+    );
+  };
+
   return (
     <Layout>
       <div>
+        {renderBreadcrumb()}
         <h1 className="text-2xl font-bold text-gray-900 mb-6">
           {isEdit ? 'Edit Trigger' : 'New Trigger'}
         </h1>

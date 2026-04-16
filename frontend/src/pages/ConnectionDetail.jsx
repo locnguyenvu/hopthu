@@ -434,6 +434,29 @@ export function ConnectionDetail({ id }) {
   const [loading, setLoading] = useState(true);
   const toast = useContext(ToastContext);
 
+  // Read hash from URL to determine active tab
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash === 'triggers') {
+      setActiveTab('triggers');
+    } else {
+      setActiveTab('edit');
+    }
+
+    // Listen for hash changes
+    const handleHashChange = () => {
+      const newHash = window.location.hash.replace('#', '');
+      if (newHash === 'triggers') {
+        setActiveTab('triggers');
+      } else {
+        setActiveTab('edit');
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   useEffect(() => {
     loadConnection();
   }, [id]);
@@ -479,7 +502,10 @@ export function ConnectionDetail({ id }) {
         <div className="border-b border-gray-200 mb-6">
           <nav className="-mb-px flex gap-4">
             <button
-              onClick={() => setActiveTab('edit')}
+              onClick={() => {
+                window.location.hash = 'edit';
+                setActiveTab('edit');
+              }}
               className={`py-2 px-4 border-b-2 font-medium text-sm ${
                 activeTab === 'edit'
                   ? 'border-blue-500 text-blue-600'
@@ -489,7 +515,10 @@ export function ConnectionDetail({ id }) {
               Edit
             </button>
             <button
-              onClick={() => setActiveTab('triggers')}
+              onClick={() => {
+                window.location.hash = 'triggers';
+                setActiveTab('triggers');
+              }}
               className={`py-2 px-4 border-b-2 font-medium text-sm ${
                 activeTab === 'triggers'
                   ? 'border-blue-500 text-blue-600'

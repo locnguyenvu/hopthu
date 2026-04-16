@@ -10,6 +10,7 @@ function TriggerLogsPanel({ triggerId }) {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [offset, setOffset] = useState(0);
+  const [selectedLog, setSelectedLog] = useState(null);
   const limit = 20;
   const toast = useContext(ToastContext);
 
@@ -46,7 +47,7 @@ function TriggerLogsPanel({ triggerId }) {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium text-gray-900">Execution Logs</h2>
-        
+
         {/* Filters */}
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-600">Status:</label>
@@ -78,22 +79,15 @@ function TriggerLogsPanel({ triggerId }) {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">URL</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Response</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50">
+                  <tr key={log.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedLog(log)}>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {formatDate(log.executed_at)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      <span className="px-1 bg-gray-100 rounded text-xs mr-1">{log.request_method}</span>
-                      <span className="text-xs truncate max-w-xs block" title={log.request_url}>
-                        {log.request_url}
-                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -105,46 +99,106 @@ function TriggerLogsPanel({ triggerId }) {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      {log.response_status ? (
-                        <span className={log.response_status < 400 ? 'text-green-600' : 'text-red-600'}>
-                          {log.response_status}
+                      <div className="text-xs text-gray-600 mb-1">
+                        <span className="px-1 bg-gray-100 rounded text-xs mr-1">{log.request_method}</span>
+                        <span className="truncate max-w-xs block" title={log.request_url}>
+                          {log.request_url}
                         </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                      <details className="inline ml-2">
-                        <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
-                          details
-                        </summary>
-                        <div className="absolute bg-white border rounded-lg shadow-lg p-3 mt-1 z-10 min-w-96">
-                          <div className="mb-2">
-                            <strong className="text-xs text-gray-600">Request Headers:</strong>
-                            <pre className="text-xs bg-gray-50 p-2 rounded mt-1 overflow-x-auto">
-                              {JSON.stringify(log.request_headers, null, 2)}
-                            </pre>
-                          </div>
-                          <div className="mb-2">
-                            <strong className="text-xs text-gray-600">Request Body:</strong>
-                            <pre className="text-xs bg-gray-50 p-2 rounded mt-1 overflow-x-auto">
-                              {JSON.stringify(log.request_body, null, 2)}
-                            </pre>
-                          </div>
-                          {log.response_body && (
-                            <div>
-                              <strong className="text-xs text-gray-600">Response Body:</strong>
-                              <pre className="text-xs bg-gray-50 p-2 rounded mt-1 overflow-x-auto max-h-40">
-                                {log.response_body}
-                              </pre>
-                            </div>
-                          )}
-                        </div>
-                      </details>
+                      </div>
+                      <div className="text-sm">
+                        {log.response_status ? (
+                          <span className={log.response_status < 400 ? 'text-green-600' : 'text-red-600'}>
+                            {log.response_status}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {/* Modal */}
+          {selectedLog && (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setSelectedLog(null)}>
+              <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-between items-center p-4 border-b">
+                  <h3 className="text-lg font-medium text-gray-900">Execution Details</h3>
+                  <button onClick={() => setSelectedLog(null)} className="text-gray-400 hover:text-gray-600">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="p-4 space-y-4">
+                  {/* Request Section */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Request</h4>
+                    <div className="bg-gray-50 rounded p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">{selectedLog.request_method}</span>
+                        <span className="text-sm text-gray-600 break-all">{selectedLog.request_url}</span>
+                      </div>
+                      {selectedLog.request_headers && Object.keys(selectedLog.request_headers).length > 0 && (
+                        <div>
+                          <strong className="text-xs text-gray-600">Headers:</strong>
+                          <pre className="text-xs bg-white p-2 rounded mt-1 overflow-x-auto border">
+                            {JSON.stringify(selectedLog.request_headers, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                      {selectedLog.request_body && (
+                        <div>
+                          <strong className="text-xs text-gray-600">Body:</strong>
+                          <pre className="text-xs bg-white p-2 rounded mt-1 overflow-x-auto border">
+                            {JSON.stringify(selectedLog.request_body, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Response Section */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Response</h4>
+                    <div className="bg-gray-50 rounded p-3 space-y-2">
+                      {selectedLog.response_status ? (
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${selectedLog.response_status < 400 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {selectedLog.response_status}
+                          </span>
+                          <span className="text-xs text-gray-500">HTTP Status</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-sm">No response</span>
+                      )}
+                      {selectedLog.response_body && (
+                        <div>
+                          <strong className="text-xs text-gray-600">Body:</strong>
+                          <pre className="text-xs bg-white p-2 rounded mt-1 overflow-x-auto max-h-40 border">
+                            {selectedLog.response_body}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Error Section */}
+                  {selectedLog.error_message && (
+                    <div>
+                      <h4 className="text-sm font-medium text-red-700 mb-2">Error</h4>
+                      <div className="bg-red-50 rounded p-3">
+                        <p className="text-sm text-red-600">{selectedLog.error_message}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -236,14 +290,16 @@ export function TriggerDetail({ id }) {
       <div>
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <button
-              onClick={() => route(`/connections/${trigger.connection_id}`)}
-              className="text-blue-600 hover:underline"
-            >
-              ← Back to {connectionInfo}
-            </button>
-          </div>
+          {/* Breadcrumb */}
+          <nav className="text-sm text-gray-500 mb-4">
+            <a href={`/connections/${trigger.connection_id}`} className="hover:text-blue-600">
+              {connectionInfo}
+            </a>
+            <span className="mx-2">&gt;</span>
+            <a href={`/connections/${trigger.connection_id}#triggers`} className="hover:text-blue-600">Triggers</a>
+            <span className="mx-2">&gt;</span>
+            <span className="text-gray-700">{trigger.name}</span>
+          </nav>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{trigger.name}</h1>
