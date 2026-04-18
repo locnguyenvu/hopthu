@@ -221,12 +221,6 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
             </button>
           )}
 
-          <button className="p-2 rounded-full hover:bg-gray-100 transition-colors" title="Delete">
-            <Trash2 className="w-5 h-5 text-gray-600" />
-          </button>
-
-          <div className="w-px h-6 bg-gray-300 mx-2" />
-
           {/* Status Actions */}
           <button
             onClick={() => handleStatusChange('ignored')}
@@ -244,47 +238,47 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
             <Sparkles className="w-5 h-5 text-gray-600" />
           </button>
 
-          {/* More Actions */}
-          <div className="relative" ref={actionsRef}>
-            <button
-              onClick={() => setShowActions(!showActions)}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <MoreVertical className="w-5 h-5 text-gray-600" />
-            </button>
-            {showActions && (
-              <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
-                <button
-                  onClick={() => { handleStatusChange('new'); setShowActions(false); }}
-                  disabled={email.status === 'new'}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-                >
-                  Mark as New
-                </button>
-                <button
-                  onClick={() => { handleStatusChange('extracted'); setShowActions(false); }}
-                  disabled={email.status === 'extracted'}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-                >
-                  Mark as Extracted
-                </button>
-                <button
-                  onClick={() => { handleStatusChange('pushed'); setShowActions(false); }}
-                  disabled={email.status === 'pushed'}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-                >
-                  Mark as Pushed
-                </button>
-              </div>
-            )}
-          </div>
+        </div>
+        {/* More Actions */}
+        <div className="relative" ref={actionsRef}>
+          <button
+            onClick={() => setShowActions(!showActions)}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <MoreVertical className="w-5 h-5 text-gray-600" />
+          </button>
+          {showActions && (
+            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+              <button
+                onClick={() => { handleStatusChange('new'); setShowActions(false); }}
+                disabled={email.status === 'new'}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Mark as New
+              </button>
+              <button
+                onClick={() => { handleStatusChange('extracted'); setShowActions(false); }}
+                disabled={email.status === 'extracted'}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Mark as Extracted
+              </button>
+              <button
+                onClick={() => { handleStatusChange('pushed'); setShowActions(false); }}
+                disabled={email.status === 'pushed'}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Mark as Pushed
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Email Header */}
       <div className="px-6 py-4 border-b border-gray-200 shrink-0">
         <div className="flex items-start justify-between gap-4 mb-3">
-          <h1 className="text-xl font-medium text-gray-900 leading-tight">
+          <h1 className="text-xl font-medium text-gray-900 leading-tight truncate" title={email.subject}>
             {email.subject || '(no subject)'}
           </h1>
           <span className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(email.status)}`}>
@@ -300,7 +294,6 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-medium text-gray-900">{email.from_email}</span>
-              <span className="text-gray-500 text-sm">&lt;{email.from_email}&gt;</span>
             </div>
             <div className="text-sm text-gray-500 mt-0.5">
               <span className="text-gray-400">to </span>
@@ -308,7 +301,6 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
             </div>
           </div>
           <div className="text-sm text-gray-500 flex items-center gap-2">
-            <Clock className="w-4 h-4" />
             {formatDate(email.received_at)}
           </div>
         </div>
@@ -393,7 +385,7 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
       {/* Content Area */}
       <div ref={containerRef} className="flex-1 overflow-auto">
         {activeTab === 'content' && (
-          <div className="p-6">
+          <div className="p-1">
             {renderBody()}
           </div>
         )}

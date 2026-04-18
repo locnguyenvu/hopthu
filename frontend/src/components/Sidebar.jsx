@@ -60,25 +60,9 @@ export function Sidebar({ collapsed, onToggle }) {
         ${collapsed ? 'w-[72px]' : 'w-[256px]'}
       `}
     >
-      {/* Compose Button */}
-      <div className="p-4">
-        <button
-          className={`
-            flex items-center gap-3 bg-white rounded-full shadow-sm border border-gray-200
-            hover:shadow-md hover:bg-gray-50 transition-all duration-200
-            ${collapsed ? 'w-12 h-12 justify-center' : 'w-[140px] h-12 px-6'}
-          `}
-          title="Compose"
-        >
-          <Plus className="w-5 h-5 text-gray-700" />
-          {!collapsed && (
-            <span className="text-sm font-medium text-gray-700">Compose</span>
-          )}
-        </button>
-      </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 px-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-2 space-y-1 overflow-y-auto mt-4">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = isActivePath(item.path);
@@ -90,7 +74,7 @@ export function Sidebar({ collapsed, onToggle }) {
               onMouseEnter={() => setHoveredItem(item.path)}
               onMouseLeave={() => setHoveredItem(null)}
               className={`
-                flex items-center gap-4 px-3 py-2 rounded-full
+                flex items-center gap-4 px-3 py-3 rounded-full
                 transition-all duration-150 relative group
                 ${collapsed ? 'justify-center' : ''}
                 ${isActive
@@ -121,7 +105,7 @@ export function Sidebar({ collapsed, onToggle }) {
         <Link
           href="/accounts"
           className={`
-            flex items-center gap-4 px-3 py-2 rounded-full
+            flex items-center gap-4 px-3 py-3 rounded-full
             transition-all duration-150 relative group
             ${collapsed ? 'justify-center' : ''}
             ${isActivePath('/accounts')
@@ -140,7 +124,7 @@ export function Sidebar({ collapsed, onToggle }) {
         <button
           onClick={handleLogout}
           className={`
-            flex items-center gap-4 px-3 py-2 rounded-full w-full
+            flex items-center gap-4 px-3 py-3 rounded-full w-full
             transition-all duration-150 relative group mt-1
             hover:bg-red-50 text-[#444746] hover:text-red-600
             ${collapsed ? 'justify-center' : ''}
