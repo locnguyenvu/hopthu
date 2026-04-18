@@ -2,6 +2,7 @@ import { Router, Route } from 'preact-router';
 import { useState, useCallback } from 'preact/hooks';
 import { createContext } from 'preact';
 import { Layout } from './components/Layout';
+import { GmailLayout } from './components/GmailLayout';
 import { ToastContainer } from './components/Toast';
 import { Inbox } from './pages/Inbox';
 import { AccountList } from './pages/AccountList';
@@ -45,7 +46,7 @@ export function App() {
   return (
     <ToastContext.Provider value={toast}>
       <Router>
-        <Route path="/" component={Inbox} />
+        <Route path="/" component={GmailLayout} />
         <Route path="/accounts" component={AccountList} />
         <Route path="/accounts/new" component={AccountForm} />
         <Route path="/accounts/:id/edit" component={AccountForm} />

@@ -202,35 +202,123 @@ Use consistent spacing with the 4px base unit:
 
 ## Navigation
 
-### Mobile Header
+The app uses a Gmail-style sidebar navigation system.
+
+### Sidebar Navigation
+
+**Desktop (>768px):** Fixed sidebar on the left
+**Mobile (<768px):** Full-screen overlay menu
 
 ```jsx
-<header className="md:hidden bg-white border-b border-[var(--color-border)] sticky top-0 z-50">
-  <div className="px-4 h-14 flex items-center justify-between">
+// Navigation items
+const navItems = [
+  { path: '/', label: 'Inbox', icon: Inbox },
+  { path: '/templates', label: 'Templates', icon: FileText },
+  { path: '/connections', label: 'Connections', icon: LinkIcon },
+];
+
+// Sidebar component usage
+<Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!collapsed)} />
+```
+
+### Sidebar Styles
+
+**Gmail-style active state:**
+```jsx
+<a
+  href={item.path}
+  className={`
+    flex items-center gap-4 px-3 py-3 rounded-full transition-all
+    ${isActive
+      ? 'bg-[#d3e3fd] text-[#041e49] font-medium'  // Active: blue background
+      : 'hover:bg-[#e9eef6] text-[#444746]'          // Inactive: gray hover
+    }
+  `}
+>
+  <Icon className="w-5 h-5" />
+  {!collapsed && <span className="text-sm">{label}</span>}
+</a>
+```
+
+**Collapsed state (72px):**
+- Icons only with tooltips on hover
+- Settings and Logout at bottom
+
+**Expanded state (256px):**
+- Full labels visible
+- Compose button at top
+- Settings and Logout at bottom
+
+### Top Bar
+
+Gmail-style header with hamburger menu:
+
+```jsx
+<header className="h-16 bg-white border-b border-gray-200 flex items-center px-4">
+  <div className="flex items-center gap-4">
+    {/* Hamburger menu */}
+    <button onClick={toggleSidebar} className="p-2 rounded-full hover:bg-gray-100">
+      <Menu className="w-5 h-5 text-gray-600" />
+    </button>
+    
+    {/* Logo */}
     <div className="flex items-center gap-2">
-      <div className="w-8 h-8 bg-[var(--color-primary)] rounded-lg flex items-center justify-center">
-        <Inbox className="w-4 h-4 text-white" />
+      <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+        {/* App icon */}
       </div>
-      <span className="text-lg font-semibold">Hopthu</span>
+      <span className="text-xl font-semibold text-gray-700">Hopthu</span>
     </div>
-    {/* Hamburger menu button */}
+  </div>
+  
+  {/* Search bar (optional) */}
+  <div className="hidden md:flex flex-1 max-w-2xl mx-8">
+    <div className="relative w-full">
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+      <input
+        type="text"
+        placeholder="Search mail"
+        className="w-full pl-12 pr-4 py-2.5 bg-[#eaf1fb] border-none rounded-full text-sm"
+      />
+    </div>
   </div>
 </header>
 ```
 
-### Bottom Navigation (Mobile)
+### Mobile Navigation
 
-Use for main app navigation on mobile:
+On mobile (<768px), the sidebar becomes a full-screen overlay:
 
 ```jsx
-<nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--color-border)] z-50">
-  <div className="flex justify-around items-center h-16">
-    {navItems.map((item) => (
-      <Link
-        key={item.path}
-        href={item.path}
-        className={`flex flex-col items-center justify-center flex-1 h-full gap-1 ${
-          isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted-foreground)]'
+{mobileMenuOpen && (
+  <div className="md:hidden fixed inset-0 top-16 z-40 bg-[#f6f8fc]">
+    <nav className="p-4 space-y-2">
+      {navItems.map((item) => (
+        <a
+          key={item.path}
+          href={item.path}
+          className={`
+            flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium
+            ${isActive
+              ? 'bg-[#d3e3fd] text-[#041e49]'
+              : 'text-[#444746] hover:bg-[#e9eef6]'
+            }
+          `}
+        >
+          <Icon className="w-5 h-5" />
+          {label}
+        </a>
+      ))}
+    </nav>
+  </div>
+)}
+```
+
+### Legacy Navigation (Not Used)
+
+The following patterns are from the old implementation and should **not** be used:
+
+❌ **Bottom navigation bar** (replaced by sidebar)
+❌ **Header navigation with horizontal links** (replaced by sidebar)
         }`}
       >
         <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
@@ -368,6 +456,120 @@ Add to icon-only buttons:
 ❌ **Don't use hardcoded hex colors** - use design tokens
 ❌ **Don't make touch targets smaller than 44px**
 ❌ **Don't use desktop-first responsive design**
+
+---
+
+## Gmail-Style 3-Column Layout
+
+The application now uses a Gmail-inspired layout with three columns:
+
+### Architecture
+
+```
+GmailLayout (Main container)
+├── Top Bar (hamburger, logo, search)
+├── Sidebar (navigation - collapsible)
+├── EmailList (middle column)
+└── EmailViewer (right column - detail view)
+```
+
+### Components
+
+**GmailLayout.jsx** - Main layout container:
+- Manages sidebar collapse state (persisted in localStorage)
+- Handles mobile view switching (list/detail)
+- URL-based email selection via query params (`?email=123`)
+- Coordinates refresh between list and viewer
+
+**Sidebar.jsx** - Navigation sidebar:
+- Collapsible: 256px expanded, 72px collapsed
+- Gmail-style rounded nav items with active state highlighting
+- Compose button (top), Settings/Logout (bottom)
+
+**EmailList.jsx** - Email list display:
+- Two-line layout: Subject (top) + Sender (bottom)
+- Status icons for email states (new, extracted, ignored, pushed)
+- Selection checkboxes with bulk actions
+- Auto-refresh when email status changes
+
+**EmailViewer.jsx** - Email detail panel:
+- Toolbar with status actions (ignore, re-parse, mark as)
+- Tabbed content: Email | Templates | Extracted Data | Logs
+- Empty state when no email selected
+- Mobile back button support
+
+### Integration Pattern
+
+**Refreshing Email List on Status Change:**
+
+```jsx
+// Parent component (GmailLayout)
+const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+const handleEmailStatusChange = useCallback(() => {
+  setRefreshTrigger(prev => prev + 1);
+}, []);
+
+// Pass to both components
+<EmailList refreshTrigger={refreshTrigger} />
+<EmailViewer onStatusChange={handleEmailStatusChange} />
+
+// EmailViewer calls onStatusChange after successful update
+const handleStatusChange = async (status) => {
+  await api.updateEmailStatus(emailId, status);
+  if (onStatusChange) onStatusChange();
+};
+
+// EmailList refreshes when trigger changes
+useEffect(() => {
+  if (refreshTrigger > 0) loadEmails();
+}, [refreshTrigger]);
+```
+
+### Email List Row Layout
+
+```jsx
+<div className="flex items-start gap-3 px-4 py-3">
+  {/* Checkbox */}
+  <button className="mt-0.5">...</button>
+  
+  {/* Status Icon */}
+  <div className="mt-1">
+    <StatusBadge status={email.status} />
+  </div>
+  
+  {/* Subject (top) + Sender (bottom) */}
+  <div className="flex-1 min-w-0">
+    <div className="truncate font-medium">{email.subject}</div>
+    <div className="truncate text-sm text-gray-500">{email.from_email}</div>
+  </div>
+  
+  {/* Date */}
+  <div className="text-sm text-gray-500 mt-0.5">{formatDate(...)}</div>
+</div>
+```
+
+### Responsive Behavior
+
+| Viewport | Layout |
+|----------|--------|
+| Desktop (>1024px) | Full 3-column: Sidebar + List + Detail |
+| Tablet (768-1024px) | Collapsible sidebar, List + Detail |
+| Mobile (<768px) | List OR Detail (toggle with back button) |
+
+### Status Icons
+
+Displayed in email list using Lucide icons:
+- `new` → `Mail` (gray)
+- `extracted` → `Sparkles` (emerald)
+- `ignored` → `EyeOff` (amber)
+- `pushed` → `CheckCircle2` (blue)
+
+### What to Avoid
+
+❌ Don't show body snippet in email list (removed for cleaner Gmail-style)
+❌ Don't use separate columns for sender and subject (combined now)
+❌ Don't show Archive/Reply/Forward buttons (not implemented features)
 
 ---
 
