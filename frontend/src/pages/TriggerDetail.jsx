@@ -303,16 +303,6 @@ export function TriggerDetail({ id }) {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{trigger.name}</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {templateInfo} → {connectionInfo}
-                <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
-                  trigger.is_active
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {trigger.is_active ? 'Active' : 'Inactive'}
-                </span>
-              </p>
             </div>
             <button
               onClick={() => route(`/triggers/${id}/edit`)}

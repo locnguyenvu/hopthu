@@ -141,3 +141,95 @@ body {
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
   }
 }
+
+/* Gmail-style specific styles */
+.gmail-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.gmail-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gmail-scrollbar::-webkit-scrollbar-thumb {
+  background: #dadce0;
+  border-radius: 4px;
+}
+
+.gmail-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #bdc1c6;
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Email list row hover effect */
+.email-row {
+  position: relative;
+}
+
+.email-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: -1;
+}
+
+.email-row:hover::before {
+  background: #f2f6fc;
+}
+
+/* Gmail blue accent colors */
+.gmail-blue {
+  color: #1a73e8;
+}
+
+.gmail-blue-bg {
+  background-color: #c2dbff;
+}
+
+.gmail-blue-border {
+  border-color: #1a73e8;
+}
+
+/* Gmail sidebar active state */
+.gmail-nav-active {
+  background-color: #d3e3fd;
+  color: #041e49;
+  font-weight: 500;
+}
+
+/* Gmail compose button style */
+.gmail-compose-btn {
+  background: #c2e7ff;
+  color: #001d35;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  transition: box-shadow 0.08s linear, min-width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gmail-compose-btn:hover {
+  box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+}
+
+/* Selection highlight */
+.email-selected {
+  background-color: #c2dbff !important;
+}
+
+/* Smooth transitions for layout */
+.layout-transition {
+  transition: all 0.2s ease-out;
+}
