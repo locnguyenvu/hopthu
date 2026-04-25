@@ -22,6 +22,7 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
   const [activeTab, setActiveTab] = useState('content');
   const [showActions, setShowActions] = useState(false);
   const [contentHeight, setContentHeight] = useState('600px');
+  const [selectedLog, setSelectedLog] = useState(null);
   const containerRef = useRef(null);
   const actionsRef = useRef(null);
 
@@ -29,10 +30,26 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
   useEffect(() => {
     if (!emailId) {
       setEmail(null);
+      setActiveTab('content');
       return;
     }
     loadEmail();
   }, [emailId]);
+
+  // Auto-switch to content tab if no logs/templates/data
+  useEffect(() => {
+    if (email && !loading) {
+      if (!email.email_data && activeTab === 'data') {
+        setActiveTab('content');
+      }
+      if (triggerLogs.length === 0 && activeTab === 'logs') {
+        setActiveTab('content');
+      }
+      if (templates.length === 0 && activeTab === 'templates') {
+        setActiveTab('content');
+      }
+    }
+  }, [email, templates, triggerLogs, loading]);
 
   // Calculate content height
   useEffect(() => {
@@ -69,15 +86,33 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
         api.getEmail(emailId),
         api.getEmailTemplates(emailId),
       ]);
-      setEmail(emailRes.data);
-      setTemplates(templatesRes.data || []);
+      const emailData = emailRes.data;
+      const templatesData = templatesRes.data || [];
+      setEmail(emailData);
+      setTemplates(templatesData);
 
       // Load trigger logs
+      let logs = [];
       try {
         const logsRes = await api.listAllTriggerLogs({ email_id: emailId });
-        setTriggerLogs(logsRes.data.logs || []);
+        logs = logsRes.data.logs || [];
       } catch (e) {
         console.error('Failed to load trigger logs:', e);
+        logs = [];
+      }
+
+      setTriggerLogs(logs);
+
+      // Auto-switch to content tab if no data
+      // These checks happen after state updates, so they use the current activeTab value
+      if (!emailData.email_data && activeTab === 'data') {
+        setActiveTab('content');
+      }
+      if (logs.length === 0 && activeTab === 'logs') {
+        setActiveTab('content');
+      }
+      if (templatesData.length === 0 && activeTab === 'templates') {
+        setActiveTab('content');
       }
     } catch (e) {
       setError(e.message);
@@ -453,7 +488,11 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
         {activeTab === 'logs' && (
           <div className="p-6 space-y-3">
             {triggerLogs.map((log) => (
-              <div key={log.id} className="border border-gray-200 rounded-lg p-4">
+              <div
+                key={log.id}
+                className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
+                onClick={() => setSelectedLog(log)}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -483,6 +522,94 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
           </div>
         )}
       </div>
+
+      {/* Log Detail Modal */}
+      {selectedLog && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedLog(null)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-medium text-gray-900">Execution Details</h3>
+              <button
+                onClick={() => setSelectedLog(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              {/* Request Section */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Request</h4>
+                <div className="bg-gray-50 rounded p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">{selectedLog.request_method}</span>
+                    <span className="text-sm text-gray-600 break-all">{selectedLog.request_url}</span>
+                  </div>
+                  {selectedLog.request_headers && Object.keys(selectedLog.request_headers).length > 0 && (
+                    <div>
+                      <strong className="text-xs text-gray-600">Headers:</strong>
+                      <pre className="text-xs bg-white p-2 rounded mt-1 overflow-x-auto border">
+                        {JSON.stringify(selectedLog.request_headers, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  {selectedLog.request_body && (
+                    <div>
+                      <strong className="text-xs text-gray-600">Body:</strong>
+                      <pre className="text-xs bg-white p-2 rounded mt-1 overflow-x-auto border">
+                        {JSON.stringify(selectedLog.request_body, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Response Section */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Response</h4>
+                <div className="bg-gray-50 rounded p-3 space-y-2">
+                  {selectedLog.response_status ? (
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${selectedLog.response_status < 400 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {selectedLog.response_status}
+                      </span>
+                      <span className="text-xs text-gray-500">HTTP Status</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 text-sm">No response</span>
+                  )}
+                  {selectedLog.response_body && (
+                    <div>
+                      <strong className="text-xs text-gray-600">Body:</strong>
+                      <pre className="text-xs bg-white p-2 rounded mt-1 overflow-x-auto max-h-40 border">
+                        {selectedLog.response_body}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Error Section */}
+              {selectedLog.error_message && (
+                <div>
+                  <h4 className="text-sm font-medium text-red-700 mb-2">Error</h4>
+                  <div className="bg-red-50 rounded p-3">
+                    <p className="text-sm text-red-600">{selectedLog.error_message}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
