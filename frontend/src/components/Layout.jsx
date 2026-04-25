@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react';
 import { api } from '../api';
+import { Header } from './Header';
 
 // Navigation items configuration
 const navItems = [
@@ -45,15 +46,6 @@ export function Layout({ children }) {
     localStorage.setItem('sidebarCollapsed', sidebarCollapsed.toString());
   }, [sidebarCollapsed]);
 
-  const handleLogout = async () => {
-    try {
-      await api.logout();
-      window.location.href = '/login';
-    } catch (e) {
-      console.error('Logout failed:', e);
-    }
-  };
-
   const isActivePath = (path) => {
     if (path === '/') {
       return currentPath === '/' || currentPath === '';
@@ -68,30 +60,13 @@ export function Layout({ children }) {
   return (
     <div className="h-screen flex flex-col bg-[#f6f8fc] overflow-hidden">
       {/* Top Bar */}
-      <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 shrink-0">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={toggleSidebar}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            <Menu className="w-5 h-5 text-gray-600" />
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 flex items-center justify-center">
-              <img src="/icons.svg"width="64" height="64" alt="Mailbox Logo" />
-            </div>
-            <span className="text-xl font-semibold text-gray-700">Hopthu</span>
-          </div>
-        </div>
-
-        {/* Page Title - Desktop */}
-        <div className="hidden md:flex flex-1 mx-8">
-          <h1 className="text-lg font-medium text-gray-700">
-            {navItems.find(item => isActivePath(item.path))?.label || 'Settings'}
-          </h1>
-        </div>
-
+      <Header
+        sidebarCollapsed={sidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        showPageTitle={true}
+        pageTitle={navItems.find(item => isActivePath(item.path))?.label || 'Settings'}
+        showUserDropdown={true}
+      >
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -99,7 +74,7 @@ export function Layout({ children }) {
         >
           {mobileMenuOpen ? <X className="w-5 h-5 text-gray-600" /> : <Menu className="w-5 h-5 text-gray-600" />}
         </button>
-      </header>
+      </Header>
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
@@ -139,43 +114,7 @@ export function Layout({ children }) {
             })}
           </nav>
 
-          {/* Bottom Section - Settings & Logout */}
-          <div className="p-2 border-t border-gray-200">
-            {/* Settings */}
-            <a
-              href="/accounts"
-              className={`
-                flex items-center gap-4 px-3 py-3 rounded-full
-                transition-all duration-150
-                ${sidebarCollapsed ? 'justify-center' : ''}
-                ${isActivePath('/accounts')
-                  ? 'bg-[#d3e3fd] text-[#041e49] font-medium'
-                  : 'hover:bg-[#e9eef6] text-[#444746]'
-                }
-              `}
-            >
-              <Settings className={`w-5 h-5 ${isActivePath('/accounts') ? 'text-[#041e49]' : 'text-[#444746]'}`} />
-              {!sidebarCollapsed && (
-                <span className="text-sm">Settings</span>
-              )}
-            </a>
-
-            {/* Logout */}
-            <button
-              onClick={handleLogout}
-              className={`
-                flex items-center gap-4 px-3 py-3 rounded-full w-full
-                transition-all duration-150 mt-1
-                hover:bg-red-50 text-[#444746] hover:text-red-600
-                ${sidebarCollapsed ? 'justify-center' : ''}
-              `}
-            >
-              <LogOut className="w-5 h-5" />
-              {!sidebarCollapsed && (
-                <span className="text-sm">Logout</span>
-              )}
-            </button>
-          </div>
+          {/* Bottom Section - Settings & Logout moved to user dropdown */}
         </aside>
 
         {/* Mobile Sidebar Overlay */}
@@ -202,27 +141,6 @@ export function Layout({ children }) {
                   </a>
                 );
               })}
-              <hr className="my-4 border-gray-200" />
-              <a
-                href="/accounts"
-                className={`
-                  flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors
-                  ${isActivePath('/accounts')
-                    ? 'bg-[#d3e3fd] text-[#041e49]'
-                    : 'text-[#444746] hover:bg-[#e9eef6]'
-                  }
-                `}
-              >
-                <Settings className="w-5 h-5" />
-                Settings
-              </a>
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-                Logout
-              </button>
             </nav>
           </div>
         )}

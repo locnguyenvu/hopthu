@@ -37,15 +37,6 @@ export function Sidebar({ collapsed, onToggle }) {
     };
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await api.logout();
-      window.location.href = '/login';
-    } catch (e) {
-      console.error('Logout failed:', e);
-    }
-  };
-
   const isActivePath = (path) => {
     if (path === '/') {
       return currentPath === '/' || currentPath === '';
@@ -99,43 +90,6 @@ export function Sidebar({ collapsed, onToggle }) {
         })}
       </nav>
 
-      {/* Bottom Section - Settings & Logout */}
-      <div className="p-2 border-t border-gray-200 mt-auto">
-        {/* Settings */}
-        <Link
-          href="/accounts"
-          className={`
-            flex items-center gap-4 px-3 py-3 rounded-full
-            transition-all duration-150 relative group
-            ${collapsed ? 'justify-center' : ''}
-            ${isActivePath('/accounts')
-              ? 'bg-[#d3e3fd] text-[#041e49] font-medium'
-              : 'hover:bg-[#e9eef6] text-[#444746]'
-            }
-          `}
-        >
-          <Settings className={`w-5 h-5 ${isActivePath('/accounts') ? 'text-[#041e49]' : 'text-[#444746]'}`} />
-          {!collapsed && (
-            <span className="text-sm">Settings</span>
-          )}
-        </Link>
-
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          className={`
-            flex items-center gap-4 px-3 py-3 rounded-full w-full
-            transition-all duration-150 relative group mt-1
-            hover:bg-red-50 text-[#444746] hover:text-red-600
-            ${collapsed ? 'justify-center' : ''}
-          `}
-        >
-          <LogOut className="w-5 h-5" />
-          {!collapsed && (
-            <span className="text-sm">Logout</span>
-          )}
-        </button>
-      </div>
     </aside>
   );
 }

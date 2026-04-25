@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'preact/hooks';
 import { Sidebar } from './Sidebar';
 import { EmailList } from './EmailList';
 import { EmailViewer } from './EmailViewer';
-import { Menu, Search } from 'lucide-react';
+import { Menu } from 'lucide-react';
+import { Header } from './Header';
+import { api } from '../api';
 
 export function GmailLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -86,23 +88,11 @@ export function GmailLayout() {
   return (
     <div className="h-screen flex flex-col bg-[#f6f8fc] overflow-hidden">
       {/* Top Bar */}
-      <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 shrink-0">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={toggleSidebar}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            <Menu className="w-5 h-5 text-gray-600" />
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 flex items-center justify-center">
-              <img src="/icons.svg"width="64" height="64" alt="Mailbox Logo" />
-            </div>
-            <span className="text-xl font-semibold text-gray-700">Hopthu</span>
-          </div>
-        </div>
-      </header>
+      <Header
+        sidebarCollapsed={sidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        showUserDropdown={true}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
