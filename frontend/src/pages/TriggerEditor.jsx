@@ -15,10 +15,7 @@ export function TriggerEditor({ id }) {
   const [connections, setConnections] = useState([]);
   const [templateFields, setTemplateFields] = useState([]);
   const [connectionFields, setConnectionFields] = useState([]);
-  const [sampleData, setSampleData] = useState('{\n  "amount": "500000"\n}');
   const [loading, setLoading] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTarget, setModalTarget] = useState(null);
   const isLoadingRef = useRef(false);
@@ -259,34 +256,6 @@ export function TriggerEditor({ id }) {
     } finally {
       setLoading(false);
       isLoadingRef.current = false;
-    }
-  };
-
-  const handleTest = async () => {
-    try {
-      setTesting(true);
-      setTestResult(null);
-
-      let extractedData = {};
-      try {
-        extractedData = JSON.parse(sampleData);
-      } catch (e) {
-        toast.error('Invalid sample data JSON');
-        return;
-      }
-
-      const result = await api.testTrigger(id, { extracted_data: extractedData });
-      setTestResult(result.data);
-
-      if (result.data.success) {
-        toast.success('Trigger test passed');
-      } else {
-        toast.error('Trigger test failed');
-      }
-    } catch (e) {
-      toast.error('Test failed: ' + e.message);
-    } finally {
-      setTesting(false);
     }
   };
 
@@ -639,101 +608,6 @@ export function TriggerEditor({ id }) {
               </div>
             )}
           </div>
-
-          {/* Section 3: Test (only for edit mode) */}
-          {isEdit && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                Test Trigger
-              </h2>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Sample Extracted Data (JSON)
-                  </label>
-                  <textarea
-                    value={sampleData}
-                    onInput={(e) => setSampleData(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm bg-gray-50"
-                    rows={5}
-                    placeholder='{"field": "value"}'
-                  />
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleTest}
-                    disabled={testing}
-                    className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 text-sm font-medium disabled:opacity-50"
-                  >
-                    {testing ? (
-                      <>
-                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Testing...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Run Test
-                      </>
-                    )}
-                  </button>
-                  <span className="text-xs text-gray-500">
-                    Test with sample data to verify your trigger configuration
-                  </span>
-                </div>
-
-                {testResult && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        testResult.success
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {testResult.success ? 'Success' : 'Failed'}
-                      </span>
-                      {testResult.response_status && (
-                        <span className="text-sm text-gray-600">
-                          HTTP {testResult.response_status}
-                        </span>
-                      )}
-                    </div>
-
-                    <details className="space-y-3" open>
-                      <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
-                        Request Body
-                      </summary>
-                      <pre className="bg-white p-3 rounded border text-xs overflow-x-auto">
-                        {JSON.stringify(testResult.request_body, null, 2)}
-                      </pre>
-                    </details>
-
-                    {testResult.response_body && (
-                      <details className="mt-3">
-                        <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
-                          Response
-                        </summary>
-                        <pre className="bg-white p-3 rounded border text-xs overflow-x-auto mt-2">
-                          {typeof testResult.response_body === 'string'
-                            ? testResult.response_body
-                            : JSON.stringify(testResult.response_body, null, 2)}
-                        </pre>
-                      </details>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Actions */}
           <div className="bg-white shadow rounded-lg p-6">
