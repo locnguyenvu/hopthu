@@ -49,10 +49,10 @@ def create_app():
         return await send_from_directory(static_folder / "assets", filename)
 
     # Serve other static files without authentication
-    @app.route("/favicon.ico")
+    @app.route("/favicon.svg")
     async def favicon():
         """Serve favicon without authentication."""
-        return await send_from_directory(static_folder, "favicon.ico")
+        return await send_from_directory(static_folder, "favicon.svg")
 
     @app.route("/icons.svg")
     async def icons():
