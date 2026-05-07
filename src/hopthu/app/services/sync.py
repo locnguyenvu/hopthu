@@ -88,7 +88,7 @@ async def sync_account(account_id: int) -> dict:
                     continue
 
                 today = datetime.now(account_tz).strftime("%d-%b-%Y")
-                response = await client.search(f"SINCE {today}")
+                response = await client.search(f"SINCE {today} UNSEEN")
                 if response.result != "OK":
                     continue
 
