@@ -5,7 +5,20 @@ import { DEFAULT_TIMEZONE } from './src/constants.js'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [preact(), tailwindcss()],
+  plugins: [
+    preact(),
+    tailwindcss(),
+    {
+      name: 'html-transform',
+      transformIndexHtml(html) {
+        const appRoot = process.env.QUART_APPLICATION_ROOT || '/';
+        return html.replace(
+          '<base href="/" />',
+          `<base href="${appRoot}" />`
+        );
+      },
+    },
+  ],
   resolve: {
     alias: {
       'react': 'preact/compat',
@@ -13,9 +26,10 @@ export default defineConfig({
     },
   },
   define: {
-    'APP_TZ': JSON.stringify(process.env.QUART_TZ || DEFAULT_TIMEZONE)
+    'APP_TZ': JSON.stringify(process.env.QUART_TZ || DEFAULT_TIMEZONE),
+    'API_BASE': JSON.stringify(process.env.QUART_APPLICATION_ROOT || '/'),
   },
-  base: '/', // Ensure assets are loaded from the correct base path
+  base: process.env.QUART_APPLICATION_ROOT || '/', // Ensure assets are loaded from the correct base path
   build: {
     outDir: '../src/hopthu/app/static',
     emptyOutDir: true,

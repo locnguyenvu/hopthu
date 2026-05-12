@@ -2,7 +2,8 @@
  * API client for the Hopthu backend.
  */
 
-const API_BASE = '';
+// API_BASE is injected at build time via vite.config.js from QUART_APPLICATION_ROOT
+// In dev mode, the Vite proxy handles routing so this stays empty
 
 async function request(path, options = {}) {
   const url = `${API_BASE}${path}`;

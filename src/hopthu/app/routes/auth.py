@@ -2,7 +2,7 @@
 
 from functools import wraps
 
-from quart import Blueprint, request, session, redirect, render_template_string
+from quart import Blueprint, request, session, redirect, render_template_string, url_for
 from werkzeug.security import check_password_hash
 
 from quart import current_app
@@ -72,7 +72,7 @@ LOGIN_TEMPLATE = """
 <body>
     <div class="login-box">
         <h1>Hopthu</h1>
-        <form method="POST" action="/api/auth/login">
+        <form method="POST" action="{{ auth_url }}">
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required autocomplete="current-password">
@@ -94,7 +94,7 @@ def login_required(f):
     @wraps(f)
     async def decorated_function(*args, **kwargs):
         if "user" not in session:
-            return redirect("/login")
+            return redirect(url_for("auth.login_page"))
         return await f(*args, **kwargs)
 
     return decorated_function
@@ -116,7 +116,7 @@ def api_login_required(f):
 async def login_page():
     """Serve the login page."""
     error = request.args.get("error")
-    return await render_template_string(LOGIN_TEMPLATE, error=error)
+    return await render_template_string(LOGIN_TEMPLATE, error=error, auth_url=url_for('auth.login'))
 
 
 @bp.route("/api/auth/login", methods=["POST"])
@@ -130,9 +130,9 @@ async def login():
 
     if check_password_hash(current_app.config["USER_PASSWORD_HASH"], password):
         session["user"] = "admin"
-        return redirect("/")
+        return redirect(current_app.config["APPLICATION_ROOT"])
     else:
-        return redirect("/login?error=Invalid password")
+        return redirect(url_for("auth.login", error="Invalid password"))
 
 
 
