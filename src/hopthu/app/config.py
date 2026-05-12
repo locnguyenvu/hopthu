@@ -15,6 +15,7 @@ QUART_DB_PATH = os.environ.get(
 )
 QUART_USER_PASSWORD_HASH = os.environ.get("QUART_USER_PASSWORD_HASH", "")
 QUART_TZ = os.environ.get("QUART_TZ", "Asia/Ho_Chi_Minh")
+QUART_APPLICATION_ROOT = os.environ.get("QUART_APPLICATION_ROOT", "/")
 
 
 def get_fernet() -> Fernet:
