@@ -2,6 +2,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
+import { bp } from '../lib/base';
 
 export function TemplateEditor({ id, emailId }) {
   const [template, setTemplate] = useState({
@@ -176,7 +177,7 @@ export function TemplateEditor({ id, emailId }) {
         await api.updateTemplate(id, data);
       } else {
         const res = await api.createTemplate(data);
-        route(`/templates/${res.data.id}`);
+        route(bp(`/templates/${res.data.id}`));
       }
     } catch (e) {
       setError(e.message);
@@ -189,7 +190,7 @@ export function TemplateEditor({ id, emailId }) {
     if (!confirm('Are you sure you want to delete this template?')) return;
     try {
       await api.deleteTemplate(id);
-      route('/templates');
+      route(bp('/templates'));
     } catch (e) {
       setError('Failed to delete: ' + e.message);
     }
@@ -459,14 +460,14 @@ export function TemplateEditor({ id, emailId }) {
                 </button>
               ) : hasTrigger ? (
                 <button
-                  onClick={() => route(`/triggers/${triggerId}`)}
+                  onClick={() => route(bp(`/triggers/${triggerId}`))}
                   className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700"
                 >
                   View Trigger
                 </button>
               ) : (
                 <button
-                  onClick={() => route(`/triggers/new?template_id=${id}`)}
+                  onClick={() => route(bp(`/triggers/new?template_id=${id}`))}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
                 >
                   Create Trigger

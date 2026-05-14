@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api';
 import { Header } from './Header';
+import { bp } from '../lib/base';
 
 // Navigation items configuration
 const navItems = [
@@ -94,7 +95,7 @@ export function Layout({ children }) {
               return (
                 <a
                   key={item.path}
-                  href={item.path}
+                  href={bp(item.path)}
                   className={`
                     flex items-center gap-4 px-3 py-3 rounded-full
                     transition-all duration-150

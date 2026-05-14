@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'preact/hooks';
 import { Settings, LogOut, User } from 'lucide-react';
 import { api } from '../api';
+import { bp } from '../lib/base';
 
 export function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -9,7 +10,7 @@ export function UserDropdown() {
   const handleLogout = async () => {
     try {
       await api.logout();
-      window.location.href = '/login';
+      window.location.href = bp('/login');
     } catch (e) {
       console.error('Logout failed:', e);
     }
@@ -32,7 +33,7 @@ export function UserDropdown() {
   const handleAccountClick = (e) => {
     e.preventDefault();
     setIsOpen(false);
-    window.location.href = '/accounts';
+    window.location.href = bp('/accounts');
   };
 
   const handleLogoutClick = (e) => {
@@ -54,7 +55,7 @@ export function UserDropdown() {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
           <a
-            href="/accounts"
+            href={bp('/accounts')}
             onClick={handleAccountClick}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >

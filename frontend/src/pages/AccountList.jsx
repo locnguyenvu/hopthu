@@ -2,6 +2,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { Link } from 'preact-router';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
+import { bp } from '../lib/base';
 
 export function AccountList() {
   const [accounts, setAccounts] = useState([]);
@@ -48,7 +49,7 @@ export function AccountList() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Email Accounts</h1>
         <Link
-          href="/accounts/new"
+          href={bp('/accounts/new')}
           className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
         >
           + Add Account
@@ -65,7 +66,7 @@ export function AccountList() {
         <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
           <p className="text-gray-500 mb-4">No accounts yet</p>
           <Link
-            href="/accounts/new"
+            href={bp('/accounts/new')}
             className="text-blue-600 hover:text-blue-700 font-medium"
           >
             Add your first account
@@ -95,7 +96,7 @@ export function AccountList() {
                 <tr key={account.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Link
-                      href={`/accounts/${account.id}`}
+                      href={bp(`/accounts/${account.id}`)}
                       className="text-blue-600 hover:text-blue-900 font-medium"
                     >
                       {account.email}

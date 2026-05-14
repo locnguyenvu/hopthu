@@ -16,6 +16,7 @@ import { Card, CardContent } from '../components/Card';
 import { Button, IconButton } from '../components/Button';
 import { api } from '../api';
 import { ToastContext } from '../app';
+import { bp } from '../lib/base';
 
 // Method badge component
 function MethodBadge({ method }) {
@@ -41,7 +42,7 @@ function ConnectionCard({ conn, onTest, onDelete, testing }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <Link
-            href={`/connections/${conn.id}`}
+            href={bp(`/connections/${conn.id}`)}
             className="font-semibold text-[var(--color-primary)] hover:underline block truncate"
           >
             {conn.name}
@@ -93,7 +94,7 @@ function ConnectionRow({ conn, onTest, onDelete, testing }) {
     <tr className="transition-colors hover:bg-[var(--color-muted)]">
       <td className="px-4 py-4">
         <Link
-          href={`/connections/${conn.id}`}
+          href={bp(`/connections/${conn.id}`)}
           className="font-medium text-[var(--color-primary)] hover:underline"
         >
           {conn.name}
@@ -197,7 +198,7 @@ export function ConnectionList() {
               Manage external API integrations
             </p>
           </div>
-          <Link href="/connections/new">
+          <Link href={bp('/connections/new')}>
             <Button className="w-full sm:w-auto">
               <Plus className="w-4 h-4" />
               New Connection
@@ -221,7 +222,7 @@ export function ConnectionList() {
               </div>
               <h3 className="text-lg font-medium text-[var(--color-foreground)] mb-2">No connections yet</h3>
               <p className="text-[var(--color-muted-foreground)] mb-6">Create a connection to integrate with external systems</p>
-              <Link href="/connections/new">
+              <Link href={bp('/connections/new')}>
                 <Button>
                   <Plus className="w-4 h-4" />
                   Create Connection

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
+import { bp } from '../lib/base';
 
 export function AccountForm({ id }) {
   const [form, setForm] = useState({
@@ -109,7 +110,7 @@ export function AccountForm({ id }) {
       } else {
         await api.createAccount(form);
       }
-      route('/accounts');
+      route(bp('/accounts'));
     } catch (e) {
       setError(e.message);
     } finally {

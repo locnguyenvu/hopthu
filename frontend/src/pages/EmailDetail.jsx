@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'preact/hooks';
 import { Link, route } from 'preact-router';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
+import { bp } from '../lib/base';
 
 export function EmailDetail({ id }) {
   const [email, setEmail] = useState(null);
@@ -154,7 +155,7 @@ export function EmailDetail({ id }) {
       <Layout>
         <div className="text-center py-12">
           <p className="text-gray-500">Email not found</p>
-          <Link href="/" className="mt-4 text-blue-600 hover:text-blue-700">
+          <Link href={bp('/')} className="mt-4 text-blue-600 hover:text-blue-700">
             Back to Inbox
           </Link>
         </div>
@@ -165,7 +166,7 @@ export function EmailDetail({ id }) {
   return (
     <Layout>
       <div className="flex items-center gap-3 mb-4">
-        <Link href="/" className="text-blue-600 hover:text-blue-700 text-sm">
+        <Link href={bp('/')} className="text-blue-600 hover:text-blue-700 text-sm">
           ← Back to Inbox
         </Link>
         <span className="text-gray-300">|</span>
@@ -298,7 +299,7 @@ export function EmailDetail({ id }) {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-medium text-gray-500">Matching Templates</h3>
                   <Link
-                    href={`/emails/${id}/new-template`}
+                    href={bp(`/emails/${id}/new-template`)}
                     className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
                   >
                     Create Template
@@ -314,7 +315,7 @@ export function EmailDetail({ id }) {
                           <p className="font-medium">{template.subject || 'Any subject'}</p>
                         </div>
                         <Link
-                          href={`/templates/${template.id}`}
+                          href={bp(`/templates/${template.id}`)}
                           className="text-blue-600 hover:text-blue-700 text-sm"
                         >
                           Edit

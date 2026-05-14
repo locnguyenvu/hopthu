@@ -2,6 +2,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { Link } from 'preact-router';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
+import { bp } from '../lib/base';
 
 export function TemplateList() {
   const [templates, setTemplates] = useState([]);
@@ -63,7 +64,7 @@ export function TemplateList() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Templates</h1>
         <Link
-          href="/templates/new"
+          href={bp('/templates/new')}
           className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
         >
           + New Template
@@ -107,7 +108,7 @@ export function TemplateList() {
                 <tr key={template.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <Link
-                      href={`/templates/${template.id}`}
+                      href={bp(`/templates/${template.id}`)}
                       className="text-blue-600 hover:text-blue-900 block"
                     >
                       <div className="font-medium text-gray-900">
@@ -134,7 +135,7 @@ export function TemplateList() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link
-                      href={`/templates/${template.id}`}
+                      href={bp(`/templates/${template.id}`)}
                       className="text-blue-600 hover:text-blue-900 mr-4"
                     >
                       Edit
