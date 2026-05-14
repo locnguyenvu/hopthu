@@ -3,6 +3,7 @@ import { route } from 'preact-router';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
 import { ToastContext } from '../app';
+import { bp } from '../lib/base';
 
 function ConnectionEditForm({ id, connection, onSaved }) {
   const [name, setName] = useState('');
@@ -283,7 +284,7 @@ function ConnectionEditForm({ id, connection, onSaved }) {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => route('/connections')}
+            onClick={() => route(bp('/connections'))}
             className="px-4 py-2 text-gray-600 hover:text-gray-900"
           >
             Cancel
@@ -350,7 +351,7 @@ function ConnectionTriggers({ connectionId, connectionName }) {
           Triggers using this connection
         </h2>
         <button
-          onClick={() => route(`/triggers/new?connection_id=${connectionId}`)}
+          onClick={() => route(bp(`/triggers/new?connection_id=${connectionId}`))}
           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
         >
           New Trigger
@@ -364,7 +365,7 @@ function ConnectionTriggers({ connectionId, connectionName }) {
           No triggers configured for this connection.
           <div className="mt-4">
             <button
-              onClick={() => route(`/triggers/new?connection_id=${connectionId}`)}
+              onClick={() => route(bp(`/triggers/new?connection_id=${connectionId}`))}
               className="text-blue-600 hover:underline"
             >
               Create a trigger
@@ -406,7 +407,7 @@ function ConnectionTriggers({ connectionId, connectionName }) {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <a
-                      href={`/triggers/${trigger.id}`}
+                      href={bp(`/triggers/${trigger.id}`)}
                       className="text-sm text-gray-600 hover:text-gray-900 px-2 py-1 mr-2"
                     >
                       Edit

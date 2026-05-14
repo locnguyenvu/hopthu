@@ -11,6 +11,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { api } from '../api';
+import { bp, getBase } from '../lib/base';
 
 // Navigation items configuration
 const navItems = [
@@ -38,10 +39,15 @@ export function Sidebar({ collapsed, onToggle }) {
   }, []);
 
   const isActivePath = (path) => {
+    const base = getBase();
+    const normalizedCurrent = currentPath || '/';
+    const normalizedBase = base || '/';
+
     if (path === '/') {
-      return currentPath === '/' || currentPath === '';
+      return normalizedCurrent === normalizedBase || normalizedCurrent === normalizedBase + '/';
     }
-    return currentPath.startsWith(path);
+    const basePath = normalizedBase + path;
+    return normalizedCurrent.startsWith(basePath);
   };
 
   return (
@@ -61,7 +67,7 @@ export function Sidebar({ collapsed, onToggle }) {
           return (
             <Link
               key={item.path}
-              href={item.path}
+              href={bp(item.path)}
               onMouseEnter={() => setHoveredItem(item.path)}
               onMouseLeave={() => setHoveredItem(null)}
               className={`

@@ -3,6 +3,7 @@ import { route } from 'preact-router';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
 import { ToastContext } from '../app';
+import { bp } from '../lib/base';
 
 function TriggerLogsPanel({ triggerId }) {
   const [logs, setLogs] = useState([]);
@@ -292,11 +293,11 @@ export function TriggerDetail({ id }) {
         <div className="mb-6">
           {/* Breadcrumb */}
           <nav className="text-sm text-gray-500 mb-4">
-            <a href={`/connections/${trigger.connection_id}`} className="hover:text-blue-600">
+            <a href={bp(`/connections/${trigger.connection_id}`)} className="hover:text-blue-600">
               {connectionInfo}
             </a>
             <span className="mx-2">&gt;</span>
-            <a href={`/connections/${trigger.connection_id}#triggers`} className="hover:text-blue-600">Triggers</a>
+            <a href={bp(`/connections/${trigger.connection_id}#triggers`)} className="hover:text-blue-600">Triggers</a>
             <span className="mx-2">&gt;</span>
             <span className="text-gray-700">{trigger.name}</span>
           </nav>
@@ -305,7 +306,7 @@ export function TriggerDetail({ id }) {
               <h1 className="text-2xl font-bold text-gray-900">{trigger.name}</h1>
             </div>
             <button
-              onClick={() => route(`/triggers/${id}/edit`)}
+              onClick={() => route(bp(`/triggers/${id}/edit`))}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-medium"
             >
               Edit Trigger

@@ -6,7 +6,7 @@
 // In dev mode, the Vite proxy handles routing so this stays empty
 
 async function request(path, options = {}) {
-  const url = `${API_BASE}${path}`;
+  const url = `${API_BASE.replace(/\/+$/, '')}${path}`;
   const response = await fetch(url, {
     ...options,
     headers: {

@@ -3,6 +3,7 @@ import { route } from 'preact-router';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
 import { ToastContext } from '../app';
+import { bp } from '../lib/base';
 
 export function ConnectionForm({ id }) {
   const [name, setName] = useState('');
@@ -132,7 +133,7 @@ export function ConnectionForm({ id }) {
       } else {
         const result = await api.createConnection(data);
         toast.success('Connection created');
-        route(`/connections/${result.data.id}`);
+        route(bp(`/connections/${result.data.id}`));
       }
     } catch (e) {
       toast.error('Failed to save: ' + e.message);
@@ -328,7 +329,7 @@ export function ConnectionForm({ id }) {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => route('/connections')}
+                onClick={() => route(bp('/connections'))}
                 className="px-4 py-2 text-gray-600 hover:text-gray-900"
               >
                 Cancel

@@ -4,6 +4,7 @@ import { Layout } from '../components/Layout';
 import { api } from '../api';
 import { ToastContext } from '../app';
 import { SourcePickerModal } from '../components/SourcePickerModal';
+import { bp } from '../lib/base';
 
 export function TriggerEditor({ id }) {
   const [name, setName] = useState('');
@@ -291,7 +292,7 @@ export function TriggerEditor({ id }) {
       } else {
         const result = await api.createTrigger(data);
         toast.success('Trigger created');
-        route(`/triggers/${result.data.id}`);
+        route(bp(`/triggers/${result.data.id}`));
       }
     } catch (e) {
       toast.error('Failed to save: ' + e.message);
@@ -316,7 +317,7 @@ export function TriggerEditor({ id }) {
     if (!connectionId || !selectedConnection) {
       return (
         <nav className="text-sm text-gray-500 mb-4">
-          <a href="/connections" className="hover:text-blue-600">Connections</a>
+          <a href={bp('/connections')} className="hover:text-blue-600">Connections</a>
           <span className="mx-2">&gt;</span>
           <span className="text-gray-700">{isEdit ? name || 'Edit Trigger' : 'New Trigger'}</span>
         </nav>
@@ -325,14 +326,14 @@ export function TriggerEditor({ id }) {
 
     return (
       <nav className="text-sm text-gray-500 mb-4">
-        <a href={`/connections/${connectionId}#triggers`} className="hover:text-blue-600">
+        <a href={bp(`/connections/${connectionId}#triggers`)} className="hover:text-blue-600">
           {selectedConnection.name}
         </a>
         <span className="mx-2">&gt;</span>
-        <a href={`/connections/${connectionId}#triggers`} className="hover:text-blue-600">Triggers</a>
+        <a href={bp(`/connections/${connectionId}#triggers`)} className="hover:text-blue-600">Triggers</a>
         <span className="mx-2">&gt;</span>
         {isEdit ? (
-          <a href={`/triggers/${id}`} className="text-gray-700 hover:text-blue-600">
+          <a href={bp(`/triggers/${id}`)} className="text-gray-700 hover:text-blue-600">
             {name}
           </a>
         ) : (
@@ -614,7 +615,7 @@ export function TriggerEditor({ id }) {
             <div className="flex justify-end items-center gap-3">
               <button
                 type="button"
-                onClick={() => route('/triggers')}
+                onClick={() => route(bp('/triggers'))}
                 className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium"
               >
                 Cancel

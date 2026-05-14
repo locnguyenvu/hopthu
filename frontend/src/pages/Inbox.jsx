@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from 'preact/hooks';
 import { Link } from 'preact-router';
+import { bp } from '../lib/base';
 import {
   RefreshCw,
   Filter,
@@ -49,7 +50,7 @@ function StatusBadge({ status }) {
 function EmailCard({ email, isSelected, onToggle, disabled }) {
   return (
     <Link
-      href={`/emails/${email.id}`}
+      href={bp(`/emails/${email.id}`)}
       className={`block p-4 border-b border-[var(--color-border)] last:border-b-0 transition-colors hover:bg-[var(--color-muted)] ${
         isSelected ? 'bg-blue-50/50' : ''
       }`}
@@ -108,7 +109,7 @@ function EmailRow({ email, isSelected, onToggle, disabled }) {
         </button>
       </td>
       <td className="px-4 py-4">
-        <Link href={`/emails/${email.id}`} className="block group">
+        <Link href={bp(`/emails/${email.id}`)} className="block group">
           <div className="font-medium text-[var(--color-foreground)] group-hover:text-[var(--color-primary)] transition-colors">
             {email.subject || '(no subject)'}
           </div>

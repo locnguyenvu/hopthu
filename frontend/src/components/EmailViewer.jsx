@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
 import { Link } from 'preact-router';
+import { bp } from '../lib/base';
 import {
   ArrowLeft,
   MoreVertical,
@@ -432,7 +433,7 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
                 <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p>No templates match this sender</p>
                 <Link
-                  href={`/emails/${emailId}/new-template`}
+                  href={bp(`/emails/${emailId}/new-template`)}
                   className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <Sparkles className="w-4 h-4" />
@@ -444,7 +445,7 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium text-gray-700">Matching Templates</h3>
                   <Link
-                    href={`/emails/${emailId}/new-template`}
+                    href={bp(`/emails/${emailId}/new-template`)}
                     className="text-sm text-blue-600 hover:text-blue-700"
                   >
                     + Create New Template
@@ -463,7 +464,7 @@ export function EmailViewer({ emailId, onBack, onStatusChange }) {
                         </p>
                       </div>
                       <Link
-                        href={`/templates/${template.id}`}
+                        href={bp(`/templates/${template.id}`)}
                         className="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                       >
                         Edit
