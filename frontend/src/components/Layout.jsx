@@ -1,23 +1,7 @@
 import { useState, useEffect } from 'preact/hooks';
-import {
-  Inbox,
-  FileText,
-  Link as LinkIcon,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-} from 'lucide-react';
-import { api } from '../api';
+import { Menu, X } from 'lucide-react';
 import { Header } from './Header';
-import { bp } from '../lib/base';
-
-// Navigation items configuration
-const navItems = [
-  { path: '/', label: 'Inbox', icon: Inbox },
-  { path: '/templates', label: 'Templates', icon: FileText },
-  { path: '/connections', label: 'Connections', icon: LinkIcon },
-];
+import { Sidebar } from './Sidebar';
 
 export function Layout({ children }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -25,34 +9,17 @@ export function Layout({ children }) {
     return saved === 'true';
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [pageTitle, setPageTitle] = useState('Settings');
 
-  // Update current path on navigation
+  // Close mobile menu on navigation
   useEffect(() => {
-    const updatePath = () => {
-      setCurrentPath(window.location.pathname);
-      setMobileMenuOpen(false);
-    };
-    window.addEventListener('popstate', updatePath);
-    const observer = new MutationObserver(updatePath);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => {
-      window.removeEventListener('popstate', updatePath);
-      observer.disconnect();
-    };
-  }, []);
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   // Persist sidebar state
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', sidebarCollapsed.toString());
   }, [sidebarCollapsed]);
-
-  const isActivePath = (path) => {
-    if (path === '/') {
-      return currentPath === '/' || currentPath === '';
-    }
-    return currentPath.startsWith(path);
-  };
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -65,7 +32,7 @@ export function Layout({ children }) {
         sidebarCollapsed={sidebarCollapsed}
         toggleSidebar={toggleSidebar}
         showPageTitle={true}
-        pageTitle={navItems.find(item => isActivePath(item.path))?.label || 'Settings'}
+        pageTitle={pageTitle}
         showUserDropdown={true}
       >
         {/* Mobile Menu Button */}
@@ -80,69 +47,24 @@ export function Layout({ children }) {
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar - Desktop */}
-        <aside
-          className={`
-            hidden md:flex flex-col bg-[#f6f8fc] transition-all duration-200 ease-out border-r border-gray-200
-            ${sidebarCollapsed ? 'w-[72px]' : 'w-[256px]'}
-          `}
-        >
-          {/* Navigation Items */}
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = isActivePath(item.path);
-
-              return (
-                <a
-                  key={item.path}
-                  href={bp(item.path)}
-                  className={`
-                    flex items-center gap-4 px-3 py-3 rounded-full
-                    transition-all duration-150
-                    ${sidebarCollapsed ? 'justify-center' : ''}
-                    ${isActive
-                      ? 'bg-[#d3e3fd] text-[#041e49] font-medium'
-                      : 'hover:bg-[#e9eef6] text-[#444746]'
-                    }
-                  `}
-                >
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-[#041e49]' : 'text-[#444746]'}`} />
-                  {!sidebarCollapsed && (
-                    <span className="text-sm">{item.label}</span>
-                  )}
-                </a>
-              );
-            })}
-          </nav>
-
-          {/* Bottom Section - Settings & Logout moved to user dropdown */}
-        </aside>
+        <div className="hidden md:block">
+          <Sidebar
+            collapsed={sidebarCollapsed}
+            onToggle={toggleSidebar}
+            onActiveChange={setPageTitle}
+          />
+        </div>
 
         {/* Mobile Sidebar Overlay */}
         {mobileMenuOpen && (
           <div className="md:hidden fixed inset-0 top-16 z-40 bg-[#f6f8fc]">
-            <nav className="p-4 space-y-2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = isActivePath(item.path);
-                return (
-                  <a
-                    key={item.path}
-                    href={item.path}
-                    className={`
-                      flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors
-                      ${isActive
-                        ? 'bg-[#d3e3fd] text-[#041e49]'
-                        : 'text-[#444746] hover:bg-[#e9eef6]'
-                      }
-                    `}
-                  >
-                    <Icon className="w-5 h-5" />
-                    {item.label}
-                  </a>
-                );
-              })}
-            </nav>
+            <Sidebar
+              mobile={true}
+              onActiveChange={(title) => {
+                setPageTitle(title);
+                setMobileMenuOpen(false);
+              }}
+            />
           </div>
         )}
 
