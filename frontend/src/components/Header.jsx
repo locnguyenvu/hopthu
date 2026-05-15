@@ -1,6 +1,6 @@
 import { Menu } from 'lucide-react';
 import { UserDropdown } from './UserDropdown';
-import { bp } from '../lib/base';
+import { getBase } from '../lib/base'
 
 export function Header({
   sidebarCollapsed,
@@ -22,7 +22,7 @@ export function Header({
         </button>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 flex items-center justify-center">
-            <img src={bp('/icons.svg')} width="64" height="64" alt="Mailbox Logo" />
+            <img src={`${getBase()}/icons.svg`} width="64" height="64" alt="Mailbox Logo" />
           </div>
           <span className="text-xl font-semibold text-gray-700">Hopthu</span>
         </div>

@@ -1,11 +1,11 @@
-import { Link } from 'preact-router';
+import { Link } from 'wouter';
 import { useState, useEffect } from 'preact/hooks';
 import {
   Inbox,
   FileText,
   Link as LinkIcon,
 } from 'lucide-react';
-import { bp, getBase } from '../lib/base';
+import { getBase } from '../lib/base';
 
 // Navigation items configuration
 const navItems = [
@@ -70,7 +70,7 @@ export function Sidebar({ collapsed, onToggle, mobile, onActiveChange }) {
           return (
             <Link
               key={item.path}
-              href={bp(item.path)}
+              href={item.path}
               className={`
                 flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors
                 ${isActive
@@ -104,7 +104,7 @@ export function Sidebar({ collapsed, onToggle, mobile, onActiveChange }) {
           return (
             <Link
               key={item.path}
-              href={bp(item.path)}
+              href={item.path}
               onMouseEnter={() => setHoveredItem(item.path)}
               onMouseLeave={() => setHoveredItem(null)}
               className={`

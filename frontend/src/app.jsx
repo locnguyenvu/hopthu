@@ -1,4 +1,4 @@
-import { Router, Route } from 'preact-router';
+import { Router, Route, Switch } from 'wouter';
 import { useState, useCallback } from 'preact/hooks';
 import { createContext } from 'preact';
 import { Layout } from './components/Layout';
@@ -48,23 +48,25 @@ export function App() {
 
   return (
     <ToastContext.Provider value={toast}>
-      <Router>
-        <Route path={`${base}/`} component={GmailLayout} />
-        <Route path={`${base}/accounts`} component={AccountList} />
-        <Route path={`${base}/accounts/new`} component={AccountForm} />
-        <Route path={`${base}/accounts/:id/edit`} component={AccountForm} />
-        <Route path={`${base}/accounts/:id`} component={AccountDetail} />
-        <Route path={`${base}/emails/:id`} component={EmailDetail} />
-        <Route path={`${base}/templates`} component={TemplateList} />
-        <Route path={`${base}/templates/new`} component={TemplateEditor} />
-        <Route path={`${base}/templates/:id`} component={TemplateEditor} />
-        <Route path={`${base}/emails/:emailId/new-template`} component={TemplateEditor} />
-        <Route path={`${base}/connections`} component={ConnectionList} />
-        <Route path={`${base}/connections/new`} component={ConnectionForm} />
-        <Route path={`${base}/connections/:id`} component={ConnectionDetail} />
-        <Route path={`${base}/triggers/new`} component={TriggerEditor} />
-        <Route path={`${base}/triggers/:id/edit`} component={TriggerEditor} />
-        <Route path={`${base}/triggers/:id`} component={TriggerDetail} />
+      <Router base={base}>
+        <Switch>
+          <Route path="/" component={GmailLayout} />
+          <Route path="/accounts" component={AccountList} />
+          <Route path="/accounts/new" component={AccountForm} />
+          <Route path="/accounts/:id/edit" component={AccountForm} />
+          <Route path="/accounts/:id" component={AccountDetail} />
+          <Route path="/emails/:id" component={EmailDetail} />
+          <Route path="/templates" component={TemplateList} />
+          <Route path="/templates/new" component={TemplateEditor} />
+          <Route path="/templates/:id" component={TemplateEditor} />
+          <Route path="/emails/:emailId/new-template" component={TemplateEditor} />
+          <Route path="/connections" component={ConnectionList} />
+          <Route path="/connections/new" component={ConnectionForm} />
+          <Route path="/connections/:id" component={ConnectionDetail} />
+          <Route path="/triggers/new" component={TriggerEditor} />
+          <Route path="/triggers/:id/edit" component={TriggerEditor} />
+          <Route path="/triggers/:id" component={TriggerDetail} />
+        </Switch>
       </Router>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </ToastContext.Provider>

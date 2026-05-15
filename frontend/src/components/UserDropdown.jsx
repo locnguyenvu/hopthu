@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'preact/hooks';
+import { Link } from 'wouter';
 import { Settings, LogOut, User } from 'lucide-react';
 import { api } from '../api';
-import { bp } from '../lib/base';
+import { getBase } from '../lib/base'
 
 export function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,7 +11,7 @@ export function UserDropdown() {
   const handleLogout = async () => {
     try {
       await api.logout();
-      window.location.href = bp('/login');
+      window.location.href = `${getBase()}/login`;
     } catch (e) {
       console.error('Logout failed:', e);
     }
@@ -30,11 +31,6 @@ export function UserDropdown() {
     };
   }, []);
 
-  const handleAccountClick = (e) => {
-    e.preventDefault();
-    setIsOpen(false);
-    window.location.href = bp('/accounts');
-  };
 
   const handleLogoutClick = (e) => {
     e.preventDefault();
@@ -54,14 +50,13 @@ export function UserDropdown() {
       
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-          <a
-            href={bp('/accounts')}
-            onClick={handleAccountClick}
+          <Link
+            href="/accounts"
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <Settings className="w-4 h-4" />
             Settings
-          </a>
+          </Link>
           <button
             onClick={handleLogoutClick}
             className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
