@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'preact/hooks';
-import { route } from 'preact-router';
+import { useLocation, useParams } from 'wouter';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
-import { bp } from '../lib/base';
 
-export function TemplateEditor({ id, emailId }) {
+export function TemplateEditor() {
+  const [location, setLocation] = useLocation();
+  const params = useParams();
+  const id = params.id;
+  const emailId = params.emailId;
+
   const [template, setTemplate] = useState({
     from_email: '',
     subject: '',
@@ -177,7 +181,7 @@ export function TemplateEditor({ id, emailId }) {
         await api.updateTemplate(id, data);
       } else {
         const res = await api.createTemplate(data);
-        route(bp(`/templates/${res.data.id}`));
+        setLocation(`/templates/${res.data.id}`);
       }
     } catch (e) {
       setError(e.message);
@@ -190,7 +194,7 @@ export function TemplateEditor({ id, emailId }) {
     if (!confirm('Are you sure you want to delete this template?')) return;
     try {
       await api.deleteTemplate(id);
-      route(bp('/templates'));
+      setLocation('/templates');
     } catch (e) {
       setError('Failed to delete: ' + e.message);
     }
@@ -460,14 +464,14 @@ export function TemplateEditor({ id, emailId }) {
                 </button>
               ) : hasTrigger ? (
                 <button
-                  onClick={() => route(bp(`/triggers/${triggerId}`))}
+                  onClick={() => setLocation(`/triggers/${triggerId}`)}
                   className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700"
                 >
                   View Trigger
                 </button>
               ) : (
                 <button
-                  onClick={() => route(bp(`/triggers/new?template_id=${id}`))}
+                  onClick={() => setLocation(`/triggers/new?template_id=${id}`)}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
                 >
                   Create Trigger

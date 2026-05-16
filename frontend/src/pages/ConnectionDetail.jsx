@@ -1,11 +1,11 @@
 import { useState, useEffect, useContext } from 'preact/hooks';
-import { route } from 'preact-router';
+import { useLocation, useParams, Link } from 'wouter';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
 import { ToastContext } from '../app';
-import { bp } from '../lib/base';
 
 function ConnectionEditForm({ id, connection, onSaved }) {
+  const [location, setLocation] = useLocation();
   const [name, setName] = useState('');
   const [endpoint, setEndpoint] = useState('');
   const [method, setMethod] = useState('POST');
@@ -284,7 +284,7 @@ function ConnectionEditForm({ id, connection, onSaved }) {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => route(bp('/connections'))}
+            onClick={() => setLocation('/connections')}
             className="px-4 py-2 text-gray-600 hover:text-gray-900"
           >
             Cancel
@@ -303,6 +303,7 @@ function ConnectionEditForm({ id, connection, onSaved }) {
 }
 
 function ConnectionTriggers({ connectionId, connectionName }) {
+  const [location, setLocation] = useLocation();
   const [triggers, setTriggers] = useState([]);
   const [loading, setLoading] = useState(true);
   const toast = useContext(ToastContext);
@@ -351,7 +352,7 @@ function ConnectionTriggers({ connectionId, connectionName }) {
           Triggers using this connection
         </h2>
         <button
-          onClick={() => route(bp(`/triggers/new?connection_id=${connectionId}`))}
+          onClick={() => setLocation(`/triggers/new?connection_id=${connectionId}`)}
           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
         >
           New Trigger
@@ -365,7 +366,7 @@ function ConnectionTriggers({ connectionId, connectionName }) {
           No triggers configured for this connection.
           <div className="mt-4">
             <button
-              onClick={() => route(bp(`/triggers/new?connection_id=${connectionId}`))}
+              onClick={() => setLocation(`/triggers/new?connection_id=${connectionId}`)}
               className="text-blue-600 hover:underline"
             >
               Create a trigger
@@ -406,12 +407,12 @@ function ConnectionTriggers({ connectionId, connectionName }) {
                     </button>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <a
-                      href={bp(`/triggers/${trigger.id}`)}
+                    <Link
+                      href={`/triggers/${trigger.id}`}
                       className="text-sm text-gray-600 hover:text-gray-900 px-2 py-1 mr-2"
                     >
                       Edit
-                    </a>
+                    </Link>
                     <button
                       onClick={() => handleDelete(trigger.id, trigger.name)}
                       className="text-sm text-red-600 hover:text-red-800 px-2 py-1"
@@ -429,7 +430,11 @@ function ConnectionTriggers({ connectionId, connectionName }) {
   );
 }
 
-export function ConnectionDetail({ id }) {
+export function ConnectionDetail() {
+  const [location, setLocation] = useLocation();
+  const params = useParams();
+  const id = params.id;
+
   const [activeTab, setActiveTab] = useState('edit');
   const [connection, setConnection] = useState(null);
   const [loading, setLoading] = useState(true);

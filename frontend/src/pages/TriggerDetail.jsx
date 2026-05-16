@@ -1,11 +1,11 @@
 import { useState, useEffect, useContext } from 'preact/hooks';
-import { route } from 'preact-router';
+import { useLocation, useParams, Link } from 'wouter';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
 import { ToastContext } from '../app';
-import { bp } from '../lib/base';
 
 function TriggerLogsPanel({ triggerId }) {
+  const [location, setLocation] = useLocation();
   const [logs, setLogs] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -229,7 +229,11 @@ function TriggerLogsPanel({ triggerId }) {
   );
 }
 
-export function TriggerDetail({ id }) {
+export function TriggerDetail() {
+  const [location, setLocation] = useLocation();
+  const params = useParams();
+  const id = params.id;
+
   const [trigger, setTrigger] = useState(null);
   const [loading, setLoading] = useState(true);
   const toast = useContext(ToastContext);
@@ -293,11 +297,19 @@ export function TriggerDetail({ id }) {
         <div className="mb-6">
           {/* Breadcrumb */}
           <nav className="text-sm text-gray-500 mb-4">
-            <a href={bp(`/connections/${trigger.connection_id}`)} className="hover:text-blue-600">
+            <Link
+              href={`/connections/${trigger.connection_id}`}
+              className="hover:text-blue-600"
+            >
               {connectionInfo}
-            </a>
+            </Link>
             <span className="mx-2">&gt;</span>
-            <a href={bp(`/connections/${trigger.connection_id}#triggers`)} className="hover:text-blue-600">Triggers</a>
+            <Link
+              href={`/connections/${trigger.connection_id}#triggers`}
+              className="hover:text-blue-600"
+            >
+              Triggers
+            </Link>
             <span className="mx-2">&gt;</span>
             <span className="text-gray-700">{trigger.name}</span>
           </nav>
@@ -306,7 +318,7 @@ export function TriggerDetail({ id }) {
               <h1 className="text-2xl font-bold text-gray-900">{trigger.name}</h1>
             </div>
             <button
-              onClick={() => route(bp(`/triggers/${id}/edit`))}
+              onClick={() => setLocation(`/triggers/${id}/edit`)}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-medium"
             >
               Edit Trigger

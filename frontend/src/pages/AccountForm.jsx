@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'preact/hooks';
-import { route } from 'preact-router';
+import { useLocation, useParams } from 'wouter';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
-import { bp } from '../lib/base';
 
-export function AccountForm({ id }) {
+export function AccountForm() {
+  const [location, setLocation] = useLocation();
+  const params = useParams();
+  const id = params.id;
+
   const [form, setForm] = useState({
     email: '',
     host: '',
@@ -110,7 +113,7 @@ export function AccountForm({ id }) {
       } else {
         await api.createAccount(form);
       }
-      route(bp('/accounts'));
+      setLocation('/accounts');
     } catch (e) {
       setError(e.message);
     } finally {

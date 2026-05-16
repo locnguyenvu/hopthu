@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
-import { route } from 'preact-router';
-import { bp } from '../lib/base';
+import { useLocation, useParams } from 'wouter';
 
-export function AccountDetail({ id }) {
+export function AccountDetail() {
+  const [location, setLocation] = useLocation();
+  const params = useParams();
+  const id = params.id;
+
   const [account, setAccount] = useState(null);
   const [mailboxes, setMailboxes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +67,7 @@ export function AccountDetail({ id }) {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{account?.email}</h1>
         <button
-          onClick={() => route(bp(`/accounts/${id}/edit`))}
+          onClick={() => setLocation(`/accounts/${id}/edit`)}
           className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
         >
           Edit Account

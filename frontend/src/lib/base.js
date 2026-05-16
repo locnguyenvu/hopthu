@@ -6,12 +6,3 @@ export function getBase() {
   const base = typeof API_BASE !== 'undefined' ? API_BASE : '/';
   return base === '/' ? '' : base.replace(/\/$/, '');
 }
-
-/**
- * Build a full path with the base prefix.
- * Use for href attributes and route() calls.
- */
-export function bp(path) {
-  const base = getBase();
-  return base + path;
-}

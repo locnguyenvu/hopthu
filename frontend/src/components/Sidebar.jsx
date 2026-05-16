@@ -1,17 +1,11 @@
-import { Link } from 'preact-router';
+import { Link } from 'wouter';
 import { useState, useEffect } from 'preact/hooks';
 import {
   Inbox,
   FileText,
   Link as LinkIcon,
-  Settings,
-  LogOut,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
-import { api } from '../api';
-import { bp, getBase } from '../lib/base';
+import { getBase } from '../lib/base';
 
 // Navigation items configuration
 const navItems = [
@@ -20,7 +14,7 @@ const navItems = [
   { path: '/connections', label: 'Connections', icon: LinkIcon },
 ];
 
-export function Sidebar({ collapsed, onToggle }) {
+export function Sidebar({ collapsed, onToggle, mobile, onActiveChange }) {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [hoveredItem, setHoveredItem] = useState(null);
 
@@ -38,6 +32,23 @@ export function Sidebar({ collapsed, onToggle }) {
     };
   }, []);
 
+  // Notify parent of active item
+  useEffect(() => {
+    if (onActiveChange) {
+      const base = getBase();
+      const normalizedCurrent = currentPath || '/';
+      const normalizedBase = base || '/';
+
+      const activeItem = navItems.find((item) => {
+        if (item.path === '/') {
+          return normalizedCurrent === normalizedBase || normalizedCurrent === normalizedBase + '/';
+        }
+        return normalizedCurrent.startsWith(normalizedBase + item.path);
+      });
+      onActiveChange(activeItem?.label || 'Settings');
+    }
+  }, [currentPath, onActiveChange]);
+
   const isActivePath = (path) => {
     const base = getBase();
     const normalizedCurrent = currentPath || '/';
@@ -50,6 +61,33 @@ export function Sidebar({ collapsed, onToggle }) {
     return normalizedCurrent.startsWith(basePath);
   };
 
+  if (mobile) {
+    return (
+      <nav className="p-4 space-y-2">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = isActivePath(item.path);
+          return (
+            <Link
+              key={item.path}
+              href={item.path}
+              className={`
+                flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors
+                ${isActive
+                  ? 'bg-[#d3e3fd] text-[#041e49]'
+                  : 'text-[#444746] hover:bg-[#e9eef6]'
+                }
+              `}
+            >
+              <Icon className="w-5 h-5" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+    );
+  }
+
   return (
     <aside
       className={`
@@ -57,7 +95,6 @@ export function Sidebar({ collapsed, onToggle }) {
         ${collapsed ? 'w-[72px]' : 'w-[256px]'}
       `}
     >
-
       {/* Navigation Items */}
       <nav className="flex-1 px-2 space-y-1 overflow-y-auto mt-4">
         {navItems.map((item) => {
@@ -67,7 +104,7 @@ export function Sidebar({ collapsed, onToggle }) {
           return (
             <Link
               key={item.path}
-              href={bp(item.path)}
+              href={item.path}
               onMouseEnter={() => setHoveredItem(item.path)}
               onMouseLeave={() => setHoveredItem(null)}
               className={`
@@ -95,7 +132,6 @@ export function Sidebar({ collapsed, onToggle }) {
           );
         })}
       </nav>
-
     </aside>
   );
 }
