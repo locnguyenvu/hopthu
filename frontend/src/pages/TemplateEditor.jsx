@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'preact/hooks';
+import { useRef, useState, useEffect } from 'preact/hooks';
 import { useLocation, useParams } from 'wouter';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
@@ -8,6 +8,8 @@ export function TemplateEditor() {
   const params = useParams();
   const id = params.id;
   const emailId = params.emailId;
+
+  const variableNameInput = useRef(null)
 
   const [template, setTemplate] = useState({
     from_email: '',
@@ -26,6 +28,11 @@ export function TemplateEditor() {
   const [emails, setEmails] = useState([]);
   const [testEmailId, setTestEmailId] = useState('');
   const [activeTab, setActiveTab] = useState('reference');
+  
+  // Filter state for fetching test emails
+  const [testSubjectFilter, setTestSubjectFilter] = useState('');
+  const [testStatusFilter, setTestStatusFilter] = useState('new');
+  const [loadingEmails, setLoadingEmails] = useState(false);
 
   // Separate state for extracted fields and variable assignments
   const [extractedFields, setExtractedFields] = useState([]);
@@ -55,6 +62,10 @@ export function TemplateEditor() {
   useEffect(() => {
     loadData();
   }, [id, emailId]);
+
+  useEffect(() => {
+    variableNameInput.current?.focus()
+  }, [isModalOpen, isVarModalOpen])
 
   const loadData = async () => {
     try {
@@ -103,9 +114,12 @@ export function TemplateEditor() {
         setVariableAssignments([]);
       }
 
+      // Initialize subject filter from template
+      setTestSubjectFilter(template.subject || '');
+      
       // Load emails for testing - filter by from_email, status=new, order by created_at desc
-      const emailsRes = await api.listEmails({ per_page: 100, status: 'new', from_email: template.from_email, order_by: 'created_at', order_dir: 'desc' });
-      setEmails(emailsRes.data || []);
+      await fetchTestEmails(template.from_email, template.subject || '', 'new');
+      
       if (emailId) {
         setTestEmailId(emailId);
       }
@@ -116,12 +130,37 @@ export function TemplateEditor() {
     }
   };
 
+  const fetchTestEmails = async (fromEmail, subject, status) => {
+    try {
+      setLoadingEmails(true);
+      const params = {
+        per_page: 100,
+        status: status
+      };
+      
+      if (fromEmail) {
+        params.from_email = fromEmail;
+      }
+      
+      if (subject) {
+        params.subject = subject;
+      }
+      
+      const emailsRes = await api.listEmails(params);
+      setEmails(emailsRes.data || []);
+    } catch (e) {
+      setError('Failed to load emails: ' + e.message);
+    } finally {
+      setLoadingEmails(false);
+    }
+  };
+
   const checkForExistingTrigger = async (templateId) => {
     try {
       setCheckingTrigger(true);
       const response = await api.listTriggers({ template_id: templateId });
       const triggers = response.data || [];
-      
+
       if (triggers.length > 0) {
         // Take the first trigger if multiple exist
         setHasTrigger(true);
@@ -146,10 +185,10 @@ export function TemplateEditor() {
 
   const handleTemplateChange = async (e) => {
     const fullText = e.target.value;
-    
+
     // Update full template text immediately
     setFullTemplateText(fullText);
-    
+
     // Send request to server to extract fields
     try {
       const response = await api.extractTemplateFields({ template: fullText });
@@ -326,16 +365,11 @@ export function TemplateEditor() {
       setOriginalBody(prev => prev.replace(selectedText, marker));
     }
 
-    // Update fullTemplateText
-    const assignmentsText = variableAssignments.map(v =>
-        `{% ${v.name} = ${v.value} %}`
-    ).join('\n') + (variableAssignments.length > 0 ? '\n' : '');
-    const newFullText = assignmentsText + newTemplateText;
-    setFullTemplateText(newFullText);
+    setFullTemplateText(newTemplateText);
 
     // Extract fields from the server using docthu
     try {
-      const response = await api.extractTemplateFields({ template: newFullText });
+      const response = await api.extractTemplateFields({ template: newTemplateText });
       const fields = response.data;
       const extracted = fields.filter(f => f.kind === 'extract');
       const assignments = fields.filter(f => f.kind === 'static_assign');
@@ -358,7 +392,7 @@ export function TemplateEditor() {
 
     return text.split(regex).map((part, index) => {
       // Check if this part is a variable marker
-      const isVariable = extractFieldNames.some(f => 
+      const isVariable = extractFieldNames.some(f =>
         part === `{{${f}}}` || part.startsWith(`{{${f}:`)
       );
       if (isVariable) {
@@ -606,7 +640,7 @@ export function TemplateEditor() {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-medium text-gray-900">Fields</h3>
                 <button
-                  onClick={() => setIsVarModalOpen(true)}
+                  onClick={() => { setIsVarModalOpen(true) }}
                   className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
                 >
                   + Add
@@ -643,6 +677,42 @@ export function TemplateEditor() {
             {id && (
               <div className="bg-white rounded-lg border border-gray-200 p-4">
                 <h3 className="font-medium text-gray-900 mb-3">Test Template</h3>
+                
+                {/* Filter Controls */}
+                <div className="space-y-2 mb-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Subject (optional)</label>
+                    <input
+                      type="text"
+                      value={testSubjectFilter}
+                      onChange={(e) => setTestSubjectFilter(e.target.value)}
+                      placeholder="Filter by subject"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                    <select
+                      value={testStatusFilter}
+                      onChange={(e) => setTestStatusFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    >
+                      <option value="new">new</option>
+                      <option value="extracted">extracted</option>
+                      <option value="ignored">ignored</option>
+                      <option value="pushed">pushed</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => fetchTestEmails(template.from_email, testSubjectFilter, testStatusFilter)}
+                    disabled={loadingEmails}
+                    className="w-full px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {loadingEmails ? 'Loading...' : 'Apply Filters'}
+                  </button>
+                </div>
+                
                 <select
                   value={testEmailId}
                   onChange={(e) => setTestEmailId(e.target.value)}
@@ -706,6 +776,7 @@ export function TemplateEditor() {
                 <input
                   type="text"
                   value={variableName}
+                  ref={variableNameInput}
                   onChange={(e) => setVariableName(e.target.value)}
                   placeholder="Enter variable name"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -766,6 +837,7 @@ export function TemplateEditor() {
                 <input
                   type="text"
                   value={newVarName}
+                  ref={variableNameInput}
                   onChange={(e) => setNewVarName(e.target.value)}
                   placeholder="var_name"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"

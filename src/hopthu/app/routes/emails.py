@@ -40,6 +40,7 @@ async def list_emails():
     status = request.args.get("status")
     account_id = request.args.get("account_id", type=int)
     mailbox_id = request.args.get("mailbox_id", type=int)
+    subject = request.args.get("subject")
 
     async with AsyncSession() as session:
         # Build query
@@ -55,6 +56,8 @@ async def list_emails():
             filters.append(Email.account_id == account_id)
         if mailbox_id:
             filters.append(Email.mailbox_id == mailbox_id)
+        if subject:
+            filters.append(Email.subject.like(f"%{subject}"))
         if date_from:
             try:
                 dt = datetime.fromisoformat(date_from)
