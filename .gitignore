@@ -20,4 +20,6 @@ wheels/
 **/node_modules
 
 # Frontend build output (varies by environment)
-src/hopthu/app/static/
+src/hopthu/app/static/index.html
+src/hopthu/app/static/assets/*.js
+src/hopthu/app/static/assets/*.css
