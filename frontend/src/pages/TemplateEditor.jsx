@@ -3,6 +3,17 @@ import { useLocation, useParams } from 'wouter';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
 
+// --- Block Tagging: Color Palette ---
+const TAG_COLORS = [
+  { border: '#DC2626', bg: 'rgba(220,38,38,0.08)' },
+  { border: '#D97706', bg: 'rgba(217,119,6,0.08)' },
+  { border: '#16A34A', bg: 'rgba(22,163,74,0.08)' },
+  { border: '#7C3AED', bg: 'rgba(124,58,237,0.08)' },
+  { border: '#DB2777', bg: 'rgba(219,39,119,0.08)' },
+];
+let _elCounter = 0;
+const _genElId = () => `el-${++_elCounter}`;
+
 export function TemplateEditor() {
   const [location, setLocation] = useLocation();
   const params = useParams();
@@ -10,6 +21,7 @@ export function TemplateEditor() {
   const emailId = params.emailId;
 
   const variableNameInput = useRef(null)
+  const emailViewerRef = useRef(null);
 
   const [template, setTemplate] = useState({
     from_email: '',
@@ -28,7 +40,7 @@ export function TemplateEditor() {
   const [emails, setEmails] = useState([]);
   const [testEmailId, setTestEmailId] = useState('');
   const [activeTab, setActiveTab] = useState('reference');
-  
+
   // Filter state for fetching test emails
   const [testSubjectFilter, setTestSubjectFilter] = useState('');
   const [testStatusFilter, setTestStatusFilter] = useState('new');
@@ -55,9 +67,28 @@ export function TemplateEditor() {
   const [triggerId, setTriggerId] = useState(null);
   const [checkingTrigger, setCheckingTrigger] = useState(false);
 
-
   // Build full template text with variable assignments prepended
-  const [fullTemplateText, setFullTemplateText] = useState('')
+  const [fullTemplateText, setFullTemplateText] = useState('');
+
+  // ================================================================
+  // NEW: Block-based tagging state for HTML content
+  // ================================================================
+  const [selectionMode, setSelectionMode] = useState('block'); // 'text' | 'block'
+  const [selectedElementId, setSelectedElementId] = useState(null);
+  const [blockTagName, setBlockTagName] = useState('');
+  const [blockTaggedElements, setBlockTaggedElements] = useState({});
+  // blockTaggedElements: { [elementId]: { fieldName: string, colorIndex: number } }
+
+  // Cleanup overlays on unmount
+  useEffect(() => {
+    return () => cleanupOverlays();
+  }, []);
+
+  const cleanupOverlays = () => {
+    const container = emailViewerRef.current;
+    if (!container) return;
+    container.querySelectorAll('.block-tag-overlay, .block-tag-border, .block-tag-badge').forEach(el => el.remove());
+  };
 
   useEffect(() => {
     loadData();
@@ -65,7 +96,14 @@ export function TemplateEditor() {
 
   useEffect(() => {
     variableNameInput.current?.focus()
-  }, [isModalOpen, isVarModalOpen])
+  }, [isModalOpen, isVarModalOpen]);
+
+  // Re-render block overlays whenever tagged elements change
+  useEffect(() => {
+    if (template.content_type === 'text/html' && selectionMode === 'block') {
+      renderBlockOverlays();
+    }
+  }, [blockTaggedElements, selectionMode, template.content_type, activeTab]);
 
   const loadData = async () => {
     try {
@@ -116,10 +154,10 @@ export function TemplateEditor() {
 
       // Initialize subject filter from template
       setTestSubjectFilter(template.subject || '');
-      
+
       // Load emails for testing - filter by from_email, status=new, order by created_at desc
       await fetchTestEmails(template.from_email, template.subject || '', 'new');
-      
+
       if (emailId) {
         setTestEmailId(emailId);
       }
@@ -137,15 +175,15 @@ export function TemplateEditor() {
         per_page: 100,
         status: status
       };
-      
+
       if (fromEmail) {
         params.from_email = fromEmail;
       }
-      
+
       if (subject) {
         params.subject = subject;
       }
-      
+
       const emailsRes = await api.listEmails(params);
       setEmails(emailsRes.data || []);
     } catch (e) {
@@ -315,6 +353,9 @@ export function TemplateEditor() {
   };
 
   const handleTextSelection = () => {
+    // Only use text selection in text mode or for non-HTML content
+    if (selectionMode === 'block' && template.content_type === 'text/html') return;
+
     const selection = window.getSelection();
     const text = selection.toString().trim();
 
@@ -382,6 +423,330 @@ export function TemplateEditor() {
     handleModalClose();
   };
 
+  // ================================================================
+  // NEW: Block-based tagging functions
+  // ================================================================
+
+  const getTaggableElement = (target) => {
+    if (!target || !emailViewerRef.current) return null;
+    const taggable = ['P', 'DIV', 'SPAN', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+      'A', 'STRONG', 'EM', 'B', 'I', 'TD', 'TH', 'LI', 'BLOCKQUOTE'];
+    let el = target;
+    while (el && el !== emailViewerRef.current) {
+      if (taggable.includes(el.tagName)) return el;
+      el = el.parentElement;
+    }
+    return null;
+  };
+
+  const handleBlockElementClick = (e) => {
+    if (selectionMode !== 'block') return;
+    // Don't trigger if clicking the inline editor
+    if (e.target.closest('.block-tag-editor')) return;
+
+    const el = getTaggableElement(e.target);
+    if (!el) {
+      setSelectedElementId(null);
+      cleanupSelectionOverlay();
+      return;
+    }
+
+    // Assign a unique ID to the element if it doesn't have one
+    let elId = el.getAttribute('data-element-id');
+    if (!elId) {
+      elId = _genElId();
+      el.setAttribute('data-element-id', elId);
+    }
+    const existing = blockTaggedElements[elId];
+    setSelectedElementId(elId);
+    setBlockTagName(existing ? existing.fieldName : '');
+
+    // Show selection overlay
+    showSelectionOverlay(el);
+    // Hide hover overlay
+    hideHoverOverlay();
+  };
+
+  const handleBlockElementMouseMove = (e) => {
+    if (selectionMode !== 'block' || selectedElementId) return;
+    const el = getTaggableElement(e.target);
+    if (el) {
+      showHoverOverlay(el);
+    } else {
+      hideHoverOverlay();
+    }
+  };
+
+  const handleBlockElementMouseLeave = () => {
+    hideHoverOverlay();
+  };
+
+  // Overlay helpers
+  const showHoverOverlay = (targetEl) => {
+    const container = emailViewerRef.current;
+    if (!container) return;
+    let overlay = container.querySelector('.block-tag-hover-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'block-tag-hover-overlay';
+      overlay.style.cssText = 'position:absolute;pointer-events:none;z-index:10;border:1px dashed rgba(37,99,235,0.35);background:rgba(37,99,235,0.06);border-radius:2px;transition:opacity 80ms ease;opacity:0;';
+      container.appendChild(overlay);
+    }
+    positionOverlay(overlay, targetEl);
+    overlay.style.opacity = '1';
+  };
+
+  const hideHoverOverlay = () => {
+    const overlay = emailViewerRef.current?.querySelector('.block-tag-hover-overlay');
+    if (overlay) overlay.style.opacity = '0';
+  };
+
+  const showSelectionOverlay = (targetEl) => {
+    const container = emailViewerRef.current;
+    if (!container) return;
+    let overlay = container.querySelector('.block-tag-selection-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'block-tag-selection-overlay';
+      overlay.style.cssText = 'position:absolute;pointer-events:none;z-index:10;border:2px solid #2563EB;background:rgba(239,246,255,0.4);border-radius:2px;';
+      container.appendChild(overlay);
+    }
+    positionOverlay(overlay, targetEl);
+  };
+
+  const cleanupSelectionOverlay = () => {
+    emailViewerRef.current?.querySelector('.block-tag-selection-overlay')?.remove();
+  };
+
+  const positionOverlay = (overlay, targetEl) => {
+    const container = emailViewerRef.current;
+    if (!container) return;
+    const rect = targetEl.getBoundingClientRect();
+    const cRect = container.getBoundingClientRect();
+    overlay.style.top = `${rect.top - cRect.top + container.scrollTop}px`;
+    overlay.style.left = `${rect.left - cRect.left}px`;
+    overlay.style.width = `${rect.width}px`;
+    overlay.style.height = `${rect.height}px`;
+  };
+
+  // Helper: clone the email viewer container, apply marker replacement to
+  // the element matching data-element-id, clean up highlight spans and
+  // overlay elements, then return the cleaned innerHTML as the new template.
+  const buildTemplateFromDOM = (targetElementId, newContent) => {
+    const container = emailViewerRef.current;
+    if (!container) return null;
+
+    const clone = container.cloneNode(true);
+
+    // Apply content replacement in the clone
+    const cloneEl = clone.querySelector(`[data-element-id="${targetElementId}"]`);
+    if (cloneEl) {
+      cloneEl.textContent = newContent;
+    }
+
+    // Remove var-highlight spans (unwrap their content)
+    clone.querySelectorAll('.var-highlight').forEach(span => {
+      const parent = span.parentNode;
+      while (span.firstChild) {
+        parent.insertBefore(span.firstChild, span);
+      }
+      parent.removeChild(span);
+    });
+
+    // Remove data-element-id attributes
+    clone.querySelectorAll('[data-element-id]').forEach(el => {
+      el.removeAttribute('data-element-id');
+    });
+
+    // Remove overlay elements
+    clone.querySelectorAll('.block-tag-hover-overlay, .block-tag-selection-overlay, .block-tag-border, .block-tag-badge').forEach(el => el.remove());
+
+    return clone.innerHTML;
+  };
+
+  const confirmBlockTag = async () => {
+    const name = blockTagName.trim().toLowerCase();
+    if (!name || !selectedElementId) {
+      setSelectedElementId(null);
+      cleanupSelectionOverlay();
+      return;
+    }
+
+    // Check for duplicate field name
+    if (extractedFields.some(f => f.name === name) && !blockTaggedElements[selectedElementId]) {
+      // Field exists but we're not editing an existing tag on this element
+      const existingEl = Object.entries(blockTaggedElements).find(([, v]) => v.fieldName === name);
+      if (!existingEl || existingEl[0] !== selectedElementId) {
+        // Use existing color
+      }
+    }
+
+    // Get element content
+    const el = emailViewerRef.current?.querySelector(`[data-element-id="${selectedElementId}"]`);
+    if (!el) return;
+    const originalContent = el.textContent;
+
+    // Determine color
+    let colorIndex;
+    const existingEntry = Object.entries(blockTaggedElements).find(([, v]) => v.fieldName === name);
+    if (existingEntry) {
+      colorIndex = existingEntry[1].colorIndex;
+    } else {
+      const usedIndices = Object.values(blockTaggedElements).map(v => v.colorIndex);
+      colorIndex = 0;
+      while (usedIndices.includes(colorIndex) && colorIndex < TAG_COLORS.length) colorIndex++;
+      if (colorIndex >= TAG_COLORS.length) colorIndex = Object.keys(blockTaggedElements).length % TAG_COLORS.length;
+    }
+
+    // Update blockTaggedElements state
+    setBlockTaggedElements(prev => ({
+      ...prev,
+      [selectedElementId]: { fieldName: name, colorIndex, originalContent },
+    }));
+
+    // Replace content in template with marker using DOM-based approach.
+    // This avoids substring replacement bugs where the same text appears
+    // in multiple elements.
+    const marker = `{{${name}}}`;
+    const newTemplateText = buildTemplateFromDOM(selectedElementId, marker);
+
+    if (newTemplateText === null) return;
+
+    setTemplate(prev => ({ ...prev, template: newTemplateText }));
+    setFullTemplateText(newTemplateText);
+    if (originalBody) setOriginalBody(newTemplateText);
+    if (referenceEmail) {
+      setReferenceEmail(prev => prev ? ({ ...prev, body: newTemplateText }) : null);
+    }
+
+    // Extract fields from server
+    try {
+      const response = await api.extractTemplateFields({ template: newTemplateText });
+      const fields = response.data;
+      setExtractedFields(fields.filter(f => f.kind === 'extract'));
+      setVariableAssignments(fields.filter(f => f.kind === 'static_assign'));
+    } catch (e) {
+      console.error('Failed to extract fields:', e.message);
+    }
+
+    // Reset selection
+    setSelectedElementId(null);
+    setBlockTagName('');
+    cleanupSelectionOverlay();
+  };
+
+  const cancelBlockTag = () => {
+    setSelectedElementId(null);
+    setBlockTagName('');
+    cleanupSelectionOverlay();
+  };
+
+  const removeBlockTagByElementId = (elementId) => {
+    const tagInfo = blockTaggedElements[elementId];
+    if (!tagInfo) return;
+
+    // Restore original content using DOM-based approach to avoid substring
+    // replacement bugs.
+    const newTemplateText = buildTemplateFromDOM(elementId, tagInfo.originalContent);
+
+    if (newTemplateText === null) return;
+
+    setTemplate(prev => ({ ...prev, template: newTemplateText }));
+    setFullTemplateText(newTemplateText);
+    if (originalBody) setOriginalBody(newTemplateText);
+
+    // Remove from blockTaggedElements
+    setBlockTaggedElements(prev => {
+      const next = { ...prev };
+      delete next[elementId];
+      return next;
+    });
+
+    // Remove from extractedFields
+    setExtractedFields(prev => prev.filter(f => f.name !== tagInfo.fieldName));
+  };
+
+  const removeBlockTagByFieldName = (fieldName) => {
+    // Find all elements tagged with this field name
+    const entries = Object.entries(blockTaggedElements).filter(([, v]) => v.fieldName === fieldName);
+    if (entries.length === 0) return;
+
+    // Restore original content for each element sequentially using the
+    // DOM-based approach.
+    let newTemplateText = template.template;
+
+    entries.forEach(([elementId, tagInfo]) => {
+      const tempResult = buildTemplateFromDOM(elementId, tagInfo.originalContent);
+      if (tempResult !== null) {
+        newTemplateText = tempResult;
+      }
+    });
+
+    setTemplate(prev => ({ ...prev, template: newTemplateText }));
+    setFullTemplateText(newTemplateText);
+    if (originalBody) setOriginalBody(newTemplateText);
+
+    // Remove all entries with this field name
+    setBlockTaggedElements(prev => {
+      const next = { ...prev };
+      Object.entries(next).forEach(([k, v]) => {
+        if (v.fieldName === fieldName) delete next[k];
+      });
+      return next;
+    });
+
+    // Remove from extractedFields
+    setExtractedFields(prev => prev.filter(f => f.name !== fieldName));
+  };
+
+  const renderBlockOverlays = () => {
+    const container = emailViewerRef.current;
+    if (!container) return;
+
+    // Clean old
+    container.querySelectorAll('.block-tag-border, .block-tag-badge').forEach(el => el.remove());
+
+    Object.entries(blockTaggedElements).forEach(([elementId, tagInfo]) => {
+      const el = container.querySelector(`[data-element-id="${elementId}"]`);
+      if (!el) return;
+
+      const rect = el.getBoundingClientRect();
+      const cRect = container.getBoundingClientRect();
+      const color = TAG_COLORS[tagInfo.colorIndex % TAG_COLORS.length];
+
+      // Border overlay
+      const border = document.createElement('div');
+      border.className = 'block-tag-border';
+      border.style.cssText = `position:absolute;pointer-events:none;z-index:5;border:2px solid ${color.border};border-radius:2px;`;
+      border.style.top = `${rect.top - cRect.top + container.scrollTop}px`;
+      border.style.left = `${rect.left - cRect.left}px`;
+      border.style.width = `${rect.width}px`;
+      border.style.height = `${rect.height}px`;
+      container.appendChild(border);
+
+      // Badge overlay
+      const badge = document.createElement('div');
+      badge.className = 'block-tag-badge';
+      badge.style.cssText = `position:absolute;z-index:6;pointer-events:none;animation:tagBadgeIn 150ms ease-out;`;
+      badge.style.top = `${rect.top - cRect.top + container.scrollTop - 8}px`;
+      badge.style.left = `${rect.right - cRect.left - 8}px`;
+      badge.innerHTML = `<span style="display:inline-block;padding:1px 6px;font-size:11px;font-weight:500;border-radius:3px;background-color:${color.border}18;color:${color.border};border:1px solid ${color.border}40;white-space:nowrap;">${tagInfo.fieldName}</span>`;
+      container.appendChild(badge);
+    });
+  };
+
+  const getInlineEditorPosition = () => {
+    if (!selectedElementId || !emailViewerRef.current) return null;
+    const el = emailViewerRef.current.querySelector(`[data-element-id="${selectedElementId}"]`);
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    const cRect = emailViewerRef.current.getBoundingClientRect();
+    return {
+      top: rect.top - cRect.top + emailViewerRef.current.scrollTop - 6,
+      left: Math.max(rect.right - cRect.left - 200, 0),
+    };
+  };
+
   const highlightVariables = (text) => {
     const extractFieldNames = extractedFields.map(f => f.name);
     if (!extractFieldNames.length) return text;
@@ -409,8 +774,7 @@ export function TemplateEditor() {
   const renderReference = () => {
     if (!referenceEmail && !originalBody) return null;
 
-    // const body = referenceEmail?.body || originalBody;
-    const body = fullTemplateText
+    const body = fullTemplateText;
     const extractFieldNames = extractedFields.map(f => f.name);
 
     // Build variable assignments text
@@ -433,16 +797,141 @@ export function TemplateEditor() {
         const combinedPattern = `(${escapedMarker}|${escapedMarkerWithType})`;
         highlightedBody = highlightedBody.replace(
           new RegExp(combinedPattern, 'g'),
-          '<span style="background-color: #fef08a; padding: 0 2px; border-radius: 2px; color: #1d4ed8; font-weight: 500;">$1</span>'
+          '<span class="var-highlight" style="background-color: #fef08a; padding: 0 2px; border-radius: 2px; color: #1d4ed8; font-weight: 500;">$1</span>'
         );
       });
 
+      // When in block selection mode, set up element IDs and click handlers
+      const isBlockMode = selectionMode === 'block';
+
       return (
-        <div
-          className="w-full h-full border border-gray-200 rounded-md overflow-auto p-3 bg-white"
-          onMouseUp={handleTextSelection}
-          dangerouslySetInnerHTML={{ __html: highlightedBody }}
-        />
+        <div className="relative">
+          {isBlockMode && (
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <span className="text-xs text-gray-500 font-medium">Selection mode:</span>
+              <div className="inline-flex bg-gray-100 rounded p-0.5">
+                <button
+                  onClick={() => { setSelectionMode('block'); setSelectedElementId(null); cleanupSelectionOverlay(); }}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-all ${selectionMode === 'block' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Block Select
+                </button>
+                <button
+                  onClick={() => { setSelectionMode('text'); setSelectedElementId(null); cleanupSelectionOverlay(); cleanupOverlays(); }}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-all ${selectionMode === 'text' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Text Select
+                </button>
+              </div>
+              {selectionMode === 'block' && (
+                <span className="text-xs text-blue-600">Click any element to tag it</span>
+              )}
+            </div>
+          )}
+          {!isBlockMode && (
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <span className="text-xs text-gray-500 font-medium">Selection mode:</span>
+              <div className="inline-flex bg-gray-100 rounded p-0.5">
+                <button
+                  onClick={() => { setSelectionMode('block'); }}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-all ${selectionMode === 'block' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Block Select
+                </button>
+                <button
+                  onClick={() => { setSelectionMode('text'); }}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-all ${selectionMode === 'text' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Text Select
+                </button>
+              </div>
+              {selectionMode === 'text' && (
+                <span className="text-xs text-gray-500">Select text to create variables</span>
+              )}
+            </div>
+          )}
+          <div
+            ref={emailViewerRef}
+            className={`relative w-full h-full border border-gray-200 rounded-md overflow-auto p-3 bg-white ${isBlockMode ? 'cursor-crosshair' : ''}`}
+            style={isBlockMode ? { cursor: 'crosshair', userSelect: 'none' } : {}}
+            onMouseUp={handleTextSelection}
+            onClick={isBlockMode ? handleBlockElementClick : undefined}
+            onMouseMove={isBlockMode ? handleBlockElementMouseMove : undefined}
+            onMouseLeave={isBlockMode ? handleBlockElementMouseLeave : undefined}
+            dangerouslySetInnerHTML={{
+              __html: highlightedBody,
+            }}
+          />
+          {/* Inline tag editor for block selection */}
+          {isBlockMode && selectedElementId && (() => {
+            const pos = getInlineEditorPosition();
+            if (!pos) return null;
+            const selectedEl = emailViewerRef.current?.querySelector(`[data-element-id="${selectedElementId}"]`);
+            const selectedContent = selectedEl ? selectedEl.textContent : '';
+            return (
+              <div
+                className="block-tag-editor absolute z-20 bg-white rounded-lg shadow-lg border border-gray-200 p-3 w-64"
+                style={{ top: pos.top, left: pos.left }}
+              >
+                <div className="mb-2">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Selected Content</label>
+                  <div className="px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700 max-h-20 overflow-auto break-all">
+                    {selectedContent}
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={blockTagName}
+                  onInput={(e) => setBlockTagName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); confirmBlockTag(); }
+                    else if (e.key === 'Escape') cancelBlockTag();
+                  }}
+                  placeholder="Variable name..."
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                  autoFocus
+                />
+                {/* Suggestions */}
+                {blockTagName.trim() && extractedFields.length > 0 && (
+                  <div className="mt-1 bg-white border border-gray-200 rounded shadow-sm max-h-28 overflow-auto">
+                    {extractedFields
+                      .filter(f => f.name.toLowerCase().includes(blockTagName.toLowerCase()) && f.name !== blockTagName)
+                      .map(f => (
+                        <button
+                          key={f.name}
+                          onClick={() => setBlockTagName(f.name)}
+                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2"
+                        >
+                          <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                          <span className="text-gray-700">{f.name}</span>
+                        </button>
+                      ))}
+                  </div>
+                )}
+                <div className="flex items-center justify-end gap-2 mt-2">
+                  <button
+                    onClick={cancelBlockTag}
+                    className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
+                    title="Cancel"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={confirmBlockTag}
+                    className="p-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                    title="Confirm"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
       );
     }
 
@@ -475,6 +964,14 @@ export function TemplateEditor() {
 
   return (
     <Layout>
+      {/* Add keyframe animation for badge */}
+      <style>{`
+        @keyframes tagBadgeIn {
+          from { opacity: 0; transform: scale(0.8); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">
@@ -560,7 +1057,7 @@ export function TemplateEditor() {
             <div className="p-4 h-[calc(100%-49px)]">
               {activeTab === 'reference' && (
                 <div className="h-full flex flex-col">
-                  <div className="flex-1">
+                  <div className="flex-1 relative">
                     {renderReference()}
                   </div>
                 </div>
@@ -655,12 +1152,33 @@ export function TemplateEditor() {
                 ].map((field, index) => (
                   <div key={index} className={`flex items-center justify-between p-2 rounded ${field.kind === 'static_assign' ? 'bg-blue-50' : 'bg-gray-50'}`}>
                     <div className="flex items-center gap-2">
+                      {/* Show color dot for block-tagged fields */}
+                      {(() => {
+                        const blockEntry = Object.entries(blockTaggedElements).find(([, v]) => v.fieldName === field.name);
+                        if (blockEntry) {
+                          const color = TAG_COLORS[blockEntry[1].colorIndex % TAG_COLORS.length];
+                          return <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color.border }} />;
+                        }
+                        return null;
+                      })()}
                       <code className="text-sm">{field.name}</code>
                       <span className={`text-xs px-2 py-0.5 rounded ${field.kind === 'static_assign' ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'}`}>{field.type}</span>
                       <span className={`text-xs px-2 py-0.5 rounded ${field.kind === 'static_assign' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>{field.kind}</span>
                     </div>
                     <button
-                      onClick={() => field.kind === 'static_assign' ? removeVariableAssignment(field.index) : removeField(field.name)}
+                      onClick={() => {
+                        if (field.kind === 'static_assign') {
+                          removeVariableAssignment(field.index);
+                        } else {
+                          // Check if this field was created via block tagging
+                          const blockEntry = Object.entries(blockTaggedElements).find(([, v]) => v.fieldName === field.name);
+                          if (blockEntry) {
+                            removeBlockTagByFieldName(field.name);
+                          } else {
+                            removeField(field.name);
+                          }
+                        }
+                      }}
                       className="text-red-600 hover:text-red-800 text-sm"
                     >
                       Remove
@@ -677,7 +1195,7 @@ export function TemplateEditor() {
             {id && (
               <div className="bg-white rounded-lg border border-gray-200 p-4">
                 <h3 className="font-medium text-gray-900 mb-3">Test Template</h3>
-                
+
                 {/* Filter Controls */}
                 <div className="space-y-2 mb-3">
                   <div>
@@ -712,7 +1230,7 @@ export function TemplateEditor() {
                     {loadingEmails ? 'Loading...' : 'Apply Filters'}
                   </button>
                 </div>
-                
+
                 <select
                   value={testEmailId}
                   onChange={(e) => setTestEmailId(e.target.value)}
