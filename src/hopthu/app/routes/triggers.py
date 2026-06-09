@@ -87,13 +87,25 @@ async def create_trigger():
         if not result.scalar_one_or_none():
             return error_response("Template not found"), 400
 
-    # Verify connection exists
+    # Verify connection exists and get its required fields
     async with AsyncSession() as session:
         result = await session.execute(
             select(Connection).where(Connection.id == data["connection_id"])
         )
-        if not result.scalar_one_or_none():
+        connection = result.scalar_one_or_none()
+        if not connection:
             return error_response("Connection not found"), 400
+
+        required_fields = [
+            f["name"] for f in (connection.fields or []) if f.get("required")
+        ]
+
+    # Validate field_mappings cover all required connection fields
+    field_mappings = data.get("field_mappings", [])
+    mapped_targets = {m.get("target") for m in field_mappings}
+    missing_required = [
+        f for f in required_fields if f not in mapped_targets
+    ]
 
     # Create trigger
     async with AsyncSession() as session:
@@ -101,8 +113,8 @@ async def create_trigger():
             name=data["name"],
             template_id=data["template_id"],
             connection_id=data["connection_id"],
-            is_active=data.get("is_active", True),
-            field_mappings=data.get("field_mappings", []),
+            is_active=(not missing_required),
+            field_mappings=field_mappings,
         )
         session.add(trigger)
         await session.commit()
