@@ -3,14 +3,6 @@ import { useLocation, useParams } from 'wouter';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
 
-// --- Block Tagging: Color Palette ---
-const TAG_COLORS = [
-  { border: '#DC2626', bg: 'rgba(220,38,38,0.08)' },
-  { border: '#D97706', bg: 'rgba(217,119,6,0.08)' },
-  { border: '#16A34A', bg: 'rgba(22,163,74,0.08)' },
-  { border: '#7C3AED', bg: 'rgba(124,58,237,0.08)' },
-  { border: '#DB2777', bg: 'rgba(219,39,119,0.08)' },
-];
 let _elCounter = 0;
 const _genElId = () => `el-${++_elCounter}`;
 
@@ -61,11 +53,21 @@ export function TemplateEditor() {
   const [newVarName, setNewVarName] = useState('');
   const [newVarValue, setNewVarValue] = useState('');
   const [newVarType, setNewVarType] = useState('str');
+  const [varMapWithConnection, setVarMapWithConnection] = useState(false);
+  const [varSelectedConnField, setVarSelectedConnField] = useState('');
 
   // State for trigger existence check
   const [hasTrigger, setHasTrigger] = useState(false);
   const [triggerId, setTriggerId] = useState(null);
   const [checkingTrigger, setCheckingTrigger] = useState(false);
+
+  // Connections for linking on new template
+  const [connections, setConnections] = useState([]);
+  const [selectedConnectionId, setSelectedConnectionId] = useState('');
+  const [selectedConnectionFields, setSelectedConnectionFields] = useState([])
+
+  // Connection Mapping modal state
+  const [isConnModalOpen, setIsConnModalOpen] = useState(false);
 
   // Build full template text with variable assignments prepended
   const [fullTemplateText, setFullTemplateText] = useState('');
@@ -104,6 +106,27 @@ export function TemplateEditor() {
       renderBlockOverlays();
     }
   }, [blockTaggedElements, selectionMode, template.content_type, activeTab]);
+
+  // Reload connection fields when selected connection changes
+  useEffect(() => {
+    const loadConnectionFields = async () => {
+      setSelectedConnectionFields([]);
+      if (!selectedConnectionId) return;
+      try {
+        const result = await api.getConnection(selectedConnectionId);
+        setSelectedConnectionFields(
+          (result.data.fields || []).map(field => ({
+              ...field,
+              isMapped: false,
+              source: null,
+          })));
+      } catch (e) {
+        console.error('Failed to load connection fields:', e.message);
+        setSelectedConnectionFields([]);
+      }
+    };
+    loadConnectionFields();
+  }, [selectedConnectionId]);
 
   const loadData = async () => {
     try {
@@ -155,6 +178,9 @@ export function TemplateEditor() {
       // Initialize subject filter from template
       setTestSubjectFilter(template.subject || '');
 
+      // Load connections for linking
+      await loadConnections();
+
       // Load emails for testing - filter by from_email, status=new, order by created_at desc
       await fetchTestEmails(template.from_email, template.subject || '', 'new');
 
@@ -166,6 +192,23 @@ export function TemplateEditor() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadConnections = async () => {
+    try {
+      const result = await api.listConnections();
+      setConnections(result.data || []);
+    } catch (e) {
+      console.error('Failed to load connections:', e.message);
+    }
+  };
+
+  const openConnectionModal = () => {
+    setIsConnModalOpen(true);
+  };
+
+  const closeConnectionModal = () => {
+    setIsConnModalOpen(false);
   };
 
   const fetchTestEmails = async (fromEmail, subject, status) => {
@@ -200,7 +243,6 @@ export function TemplateEditor() {
       const triggers = response.data || [];
 
       if (triggers.length > 0) {
-        // Take the first trigger if multiple exist
         setHasTrigger(true);
         setTriggerId(triggers[0].id);
       } else {
@@ -258,7 +300,27 @@ export function TemplateEditor() {
         await api.updateTemplate(id, data);
       } else {
         const res = await api.createTemplate(data);
-        setLocation(`/templates/${res.data.id}`);
+        const newTemplateId = res.data.id;
+
+        // If a connection is selected, create a trigger linking them
+        if (selectedConnectionId) {
+          try {
+            await api.createTrigger({
+              name: `${data.from_email} - Auto Trigger`,
+              template_id: newTemplateId,
+              connection_id: parseInt(selectedConnectionId),
+              is_active: true,
+              field_mappings: selectedConnectionFields.filter(f => f.isMapped).map(f => ({
+                source: f.source,
+                target: f.name,
+              })),
+            });
+          } catch (triggerErr) {
+            console.error('Failed to auto-create trigger:', triggerErr.message);
+          }
+        }
+
+        setLocation(`/templates/${newTemplateId}`);
       }
     } catch (e) {
       setError(e.message);
@@ -314,6 +376,12 @@ export function TemplateEditor() {
       return;
     }
 
+    if (varMapWithConnection) {
+      setSelectedConnectionFields(prev => prev.map(
+        f => f.name == name ? {...f, isMapped: true, source: `\$extracted_data.${name}`} : f
+      ))
+    }
+
     setIsVarModalOpen(false);
 
     // Update fullTemplateText with the new assignment
@@ -321,7 +389,7 @@ export function TemplateEditor() {
     const assignmentsText = updatedAssignments.map(v =>
         `{% ${v.name} = '${v.value}' %}`
     ).join('\n') + (updatedAssignments.length > 0 ? '\n' : '');
-    const newFullText = assignmentsText + template.template;
+    const newFullText = assignmentsText + fullTemplateText;
     setFullTemplateText(newFullText);
 
     // Extract fields from the server using docthu
@@ -339,6 +407,7 @@ export function TemplateEditor() {
     setNewVarName('');
     setNewVarValue('');
     setNewVarType('str');
+    setVarSelectedConnField('');
   };
 
   const handleVarModalClose = () => {
@@ -346,6 +415,8 @@ export function TemplateEditor() {
     setNewVarName('');
     setNewVarValue('');
     setNewVarType('str');
+    setVarMapWithConnection(false);
+    setVarSelectedConnField('');
   };
 
   const removeVariableAssignment = (index) => {
@@ -372,6 +443,8 @@ export function TemplateEditor() {
     setSelectedText('');
     setVariableName('');
     setDataType('str');
+    setVarMapWithConnection(false);
+    setVarSelectedConnField('');
     // Clear the selection
     window.getSelection().removeAllRanges();
   };
@@ -382,6 +455,13 @@ export function TemplateEditor() {
     if (extractedFields.some(f => f.name === fieldName)) {
       alert('Field already exists');
       return;
+    }
+
+    // Mark connection field as mapped if applicable
+    if (varMapWithConnection) {
+      setSelectedConnectionFields(prev => prev.map(
+        f => f.name === fieldName ? { ...f, isMapped: true, source: `\$extracted_data.${fieldName}`} : f
+      ));
     }
 
     // Build marker with type if not str (default)
@@ -422,10 +502,6 @@ export function TemplateEditor() {
 
     handleModalClose();
   };
-
-  // ================================================================
-  // NEW: Block-based tagging functions
-  // ================================================================
 
   const getTaggableElement = (target) => {
     if (!target || !emailViewerRef.current) return null;
@@ -586,22 +662,10 @@ export function TemplateEditor() {
     if (!el) return;
     const originalContent = el.textContent;
 
-    // Determine color
-    let colorIndex;
-    const existingEntry = Object.entries(blockTaggedElements).find(([, v]) => v.fieldName === name);
-    if (existingEntry) {
-      colorIndex = existingEntry[1].colorIndex;
-    } else {
-      const usedIndices = Object.values(blockTaggedElements).map(v => v.colorIndex);
-      colorIndex = 0;
-      while (usedIndices.includes(colorIndex) && colorIndex < TAG_COLORS.length) colorIndex++;
-      if (colorIndex >= TAG_COLORS.length) colorIndex = Object.keys(blockTaggedElements).length % TAG_COLORS.length;
-    }
-
     // Update blockTaggedElements state
     setBlockTaggedElements(prev => ({
       ...prev,
-      [selectedElementId]: { fieldName: name, colorIndex, originalContent },
+      [selectedElementId]: { fieldName: name, originalContent },
     }));
 
     // Replace content in template with marker using DOM-based approach.
@@ -712,12 +776,11 @@ export function TemplateEditor() {
 
       const rect = el.getBoundingClientRect();
       const cRect = container.getBoundingClientRect();
-      const color = TAG_COLORS[tagInfo.colorIndex % TAG_COLORS.length];
 
       // Border overlay
       const border = document.createElement('div');
       border.className = 'block-tag-border';
-      border.style.cssText = `position:absolute;pointer-events:none;z-index:5;border:2px solid ${color.border};border-radius:2px;`;
+      border.style.cssText = `position:absolute;pointer-events:none;z-index:5;border:2px solid #6B7280;border-radius:2px;`;
       border.style.top = `${rect.top - cRect.top + container.scrollTop}px`;
       border.style.left = `${rect.left - cRect.left}px`;
       border.style.width = `${rect.width}px`;
@@ -730,7 +793,7 @@ export function TemplateEditor() {
       badge.style.cssText = `position:absolute;z-index:6;pointer-events:none;animation:tagBadgeIn 150ms ease-out;`;
       badge.style.top = `${rect.top - cRect.top + container.scrollTop - 8}px`;
       badge.style.left = `${rect.right - cRect.left - 8}px`;
-      badge.innerHTML = `<span style="display:inline-block;padding:1px 6px;font-size:11px;font-weight:500;border-radius:3px;background-color:${color.border}18;color:${color.border};border:1px solid ${color.border}40;white-space:nowrap;">${tagInfo.fieldName}</span>`;
+      badge.innerHTML = `<span style="display:inline-block;padding:1px 6px;font-size:11px;font-weight:500;border-radius:3px;background-color:#F3F4F6;color:#374151;border:1px solid #D1D5DB;white-space:nowrap;">${tagInfo.fieldName}</span>`;
       container.appendChild(badge);
     });
   };
@@ -1129,6 +1192,39 @@ export function TemplateEditor() {
                     <option value="text/html">HTML</option>
                   </select>
                 </div>
+                {!id && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Connection (optional)</label>
+                    <select
+                      value={selectedConnectionId}
+                      onChange={(e) => {
+                        setSelectedConnectionId(e.target.value);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    >
+                      <option value="">None</option>
+                      {connections.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedConnectionId && (
+                      <button
+                        type="button"
+                        onClick={openConnectionModal}
+                        className="text-xs text-blue-600 hover:text-blue-800 mt-1 underline"
+                      >
+                        View connection fields
+                      </button>
+                    )}
+                    {!selectedConnectionId && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Selecting a connection will auto-create a trigger after saving.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1152,15 +1248,6 @@ export function TemplateEditor() {
                 ].map((field, index) => (
                   <div key={index} className={`flex items-center justify-between p-2 rounded ${field.kind === 'static_assign' ? 'bg-blue-50' : 'bg-gray-50'}`}>
                     <div className="flex items-center gap-2">
-                      {/* Show color dot for block-tagged fields */}
-                      {(() => {
-                        const blockEntry = Object.entries(blockTaggedElements).find(([, v]) => v.fieldName === field.name);
-                        if (blockEntry) {
-                          const color = TAG_COLORS[blockEntry[1].colorIndex % TAG_COLORS.length];
-                          return <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color.border }} />;
-                        }
-                        return null;
-                      })()}
                       <code className="text-sm">{field.name}</code>
                       <span className={`text-xs px-2 py-0.5 rounded ${field.kind === 'static_assign' ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'}`}>{field.type}</span>
                       <span className={`text-xs px-2 py-0.5 rounded ${field.kind === 'static_assign' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>{field.kind}</span>
@@ -1287,7 +1374,49 @@ export function TemplateEditor() {
                 </div>
               </div>
 
-              <div className="mb-4">
+              {/* Map with connection field — only when a connection is selected */}
+              {selectedConnectionId && selectedConnectionFields.length > 0 && (
+                <div className="mb-6">
+                  <label className="flex items-center gap-2 cursor-pointer mb-2">
+                    <input
+                      type="checkbox"
+                      checked={varMapWithConnection}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setVarMapWithConnection(checked);
+                        if (!checked) {
+                          setVarSelectedConnField('');
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Map with connection field</span>
+                  </label>
+
+                  {varMapWithConnection && (
+                    <select
+                      value={varSelectedConnField}
+                      onChange={(e) => {
+                        const fieldName = e.target.value;
+                        setVarSelectedConnField(fieldName);
+                        if (fieldName) {
+                          setVariableName(fieldName);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select a field...</option>
+                      {selectedConnectionFields.filter(f => !f.isMapped).map((f) => (
+                        <option key={f.name} value={f.name}>
+                          {f.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              {!varMapWithConnection && <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Variable Name
                 </label>
@@ -1300,9 +1429,9 @@ export function TemplateEditor() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   autoComplete="off"
                 />
-              </div>
+              </div>}
 
-              <div className="mb-6">
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Data Type
                 </label>
@@ -1339,6 +1468,68 @@ export function TemplateEditor() {
         </div>
       )}
 
+      {/* Connection Fields Modal */}
+      {isConnModalOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Connection Fields
+              </h3>
+              <button
+                onClick={closeConnectionModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="overflow-y-auto p-4">
+              {selectedConnectionFields.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  No fields defined for this connection.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {selectedConnectionFields.map((connField) => (
+                    <li
+                      key={connField.name}
+                      className={`flex items-center justify-between p-3 rounded-lg border ${connField.isMapped ? `bg-green-50 border-green-200` : 'bg-gray-50 border-gray-200'}`}
+                    >
+                      <span className="font-medium text-sm text-gray-700">{connField.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                          {connField.type || 'string'}
+                        </span>
+                        {connField.required && (
+                          <span className="text-xs text-red-600 bg-red-100 px-1.5 py-0.5 rounded font-medium">
+                            required
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end items-center p-4 border-t border-gray-200">
+              <button
+                onClick={closeConnectionModal}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal for variable assignment */}
       {isVarModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
@@ -1348,7 +1539,7 @@ export function TemplateEditor() {
                 Add Variable Assignment
               </h3>
 
-              <div className="mb-4">
+              {!varMapWithConnection && <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Variable Name
                 </label>
@@ -1362,7 +1553,51 @@ export function TemplateEditor() {
                   onKeyPress={(e) => e.key === 'Enter' && addVariableAssignment()}
                   autoComplete="off"
                 />
-              </div>
+              </div>}
+
+              {/* Map with connection field — only when a connection is selected */}
+              {selectedConnectionId && selectedConnectionFields.length > 0 && (
+                <div className="mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={varMapWithConnection}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setVarMapWithConnection(checked);
+                        if (!checked) {
+                          setVarSelectedConnField('');
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Map with connection field</span>
+                  </label>
+
+                  {varMapWithConnection && (
+                    <div className="mt-2">
+                      <select
+                        value={varSelectedConnField}
+                        onChange={(e) => {
+                          const fieldName = e.target.value;
+                          setVarSelectedConnField(fieldName);
+                          if (fieldName) {
+                            setNewVarName(fieldName);
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select a field...</option>
+                        {selectedConnectionFields.filter(f => !f.isMapped).map((f) => (
+                          <option key={f.name} value={f.name}>
+                            {f.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
