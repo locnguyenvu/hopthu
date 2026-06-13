@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'preact/hooks';
+import { useRef, useState, useEffect, useCallback } from 'preact/hooks';
 import { useLocation, useParams } from 'wouter';
 import { Layout } from '../components/Layout';
 import { api } from '../api';
@@ -14,6 +14,7 @@ export function TemplateEditor() {
 
   const variableNameInput = useRef(null)
   const emailViewerRef = useRef(null);
+  const extractRequestId = useRef(0);
 
   const [template, setTemplate] = useState({
     from_email: '',
@@ -41,6 +42,7 @@ export function TemplateEditor() {
   // Separate state for extracted fields and variable assignments
   const [extractedFields, setExtractedFields] = useState([]);
   const [variableAssignments, setVariableAssignments] = useState([]);
+  const [extractingFields, setExtractingFields] = useState(false);
 
   // Modal state for text selection
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,6 +80,9 @@ export function TemplateEditor() {
   const [selectionMode, setSelectionMode] = useState('block'); // 'text' | 'block'
   const [selectedElementId, setSelectedElementId] = useState(null);
   const [blockTagName, setBlockTagName] = useState('');
+  // Modal state for block assignment (now uses modal like text selection)
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [blockSelectedContent, setBlockSelectedContent] = useState('');
   const [blockTaggedElements, setBlockTaggedElements] = useState({});
   // blockTaggedElements: { [elementId]: { fieldName: string, colorIndex: number } }
 
@@ -99,6 +104,45 @@ export function TemplateEditor() {
   useEffect(() => {
     variableNameInput.current?.focus()
   }, [isModalOpen, isVarModalOpen]);
+
+  // Centralized field extraction: call the server once and split the result
+  const extractFieldsFromTemplate = useCallback(async (templateText) => {
+    if (!templateText) {
+      setExtractedFields([]);
+      setVariableAssignments([]);
+      return;
+    }
+
+    const requestId = ++extractRequestId.current;
+    setExtractingFields(true);
+    try {
+      const response = await api.extractTemplateFields({ template: templateText });
+      if (requestId !== extractRequestId.current) return;
+      const fields = response.data || [];
+      setExtractedFields(fields.filter(f => f.kind === 'extract'));
+      setVariableAssignments(fields.filter(f => f.kind === 'static_assign'));
+    } catch (e) {
+      if (requestId !== extractRequestId.current) return;
+      console.error('Failed to extract fields:', e.message);
+    } finally {
+      if (requestId === extractRequestId.current) {
+        setExtractingFields(false);
+      }
+    }
+  }, []);
+
+  // Keep template.template in sync with the full text (assignments + body)
+  useEffect(() => {
+    setTemplate(prev => (prev.template === fullTemplateText ? prev : { ...prev, template: fullTemplateText }));
+  }, [fullTemplateText]);
+
+  // Extract fields whenever the full template text changes, debounced
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      extractFieldsFromTemplate(fullTemplateText);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [fullTemplateText, extractFieldsFromTemplate]);
 
   // Re-render block overlays whenever tagged elements change
   useEffect(() => {
@@ -263,23 +307,8 @@ export function TemplateEditor() {
     setTemplate(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleTemplateChange = async (e) => {
-    const fullText = e.target.value;
-
-    // Update full template text immediately
-    setFullTemplateText(fullText);
-
-    // Send request to server to extract fields
-    try {
-      const response = await api.extractTemplateFields({ template: fullText });
-      const fields = response.data;
-      const extracted = fields.filter(f => f.kind === 'extract');
-      const assignments = fields.filter(f => f.kind === 'static_assign');
-      setExtractedFields(extracted);
-      setVariableAssignments(assignments);
-    } catch (e) {
-      console.error('Failed to extract fields:', e.message);
-    }
+  const handleTemplateChange = (e) => {
+    setFullTemplateText(e.target.value);
   };
 
   const handleSave = async () => {
@@ -356,17 +385,34 @@ export function TemplateEditor() {
     }
   };
 
-  const removeField = (fieldName) => {
-    // Remove from extractedFields
-    setExtractedFields(prev => prev.filter(f => f.name !== fieldName));
-    // Also remove from template
-    setTemplate(prev => ({
-      ...prev,
-      template: prev.template.replace(new RegExp(`\\{\\{${fieldName}(?::\\w+)?\\}\\}`, 'g'), ''),
-    }));
+  const handleResetTemplate = async () => {
+    if (!testEmailId) {
+      setError('Please select an email to reset the template');
+      return;
+    }
+    try {
+      const res = await api.getEmail(testEmailId);
+      const email = res.data;
+      setFullTemplateText(email.body);
+      setOriginalBody(email.body);
+      setReferenceEmail(email);
+      setTestResult(null);
+    } catch (e) {
+      setError('Failed to load email body: ' + e.message);
+    }
   };
 
-  const addVariableAssignment = async () => {
+  const removeField = (fieldName) => {
+    const regex = new RegExp(`\\{\\{${fieldName}(?::\\w+)?\\}\\}`, 'g');
+    const nextText = fullTemplateText.replace(regex, '');
+    setFullTemplateText(nextText);
+    if (originalBody) setOriginalBody(prev => prev.replace(regex, ''));
+    if (referenceEmail) {
+      setReferenceEmail(prev => prev ? ({ ...prev, body: prev.body.replace(regex, '') }) : null);
+    }
+  };
+
+  const addVariableAssignment = () => {
     const name = newVarName.trim();
     const value = newVarValue.trim();
     if (!name || !value) return;
@@ -384,25 +430,8 @@ export function TemplateEditor() {
 
     setIsVarModalOpen(false);
 
-    // Update fullTemplateText with the new assignment
-    const updatedAssignments = [{ name, value, type: newVarType }];
-    const assignmentsText = updatedAssignments.map(v =>
-        `{% ${v.name} = '${v.value}' %}`
-    ).join('\n') + (updatedAssignments.length > 0 ? '\n' : '');
-    const newFullText = assignmentsText + fullTemplateText;
-    setFullTemplateText(newFullText);
-
-    // Extract fields from the server using docthu
-    try {
-      const response = await api.extractTemplateFields({ template: newFullText });
-      const fields = response.data;
-      const extracted = fields.filter(f => f.kind === 'extract');
-      const assignments = fields.filter(f => f.kind === 'static_assign');
-      setExtractedFields(extracted);
-      setVariableAssignments(assignments);
-    } catch (e) {
-      console.error('Failed to extract fields:', e.message);
-    }
+    const assignmentText = `{% ${name} = '${value}' %}\n`;
+    setFullTemplateText(assignmentText + fullTemplateText);
 
     setNewVarName('');
     setNewVarValue('');
@@ -420,7 +449,11 @@ export function TemplateEditor() {
   };
 
   const removeVariableAssignment = (index) => {
-    setVariableAssignments(prev => prev.filter((_, i) => i !== index));
+    const assignment = variableAssignments[index];
+    if (!assignment) return;
+    const lines = fullTemplateText.split('\n');
+    const nextLines = lines.filter(line => !line.match(new RegExp(`^\\{%\\s*${assignment.name}\\s*=`)));
+    setFullTemplateText(nextLines.join('\n'));
   };
 
   const handleTextSelection = () => {
@@ -449,7 +482,7 @@ export function TemplateEditor() {
     window.getSelection().removeAllRanges();
   };
 
-  const handleAddVariableFromSelection = async () => {
+  const handleAddVariableFromSelection = () => {
     const fieldName = variableName.trim();
     if (!fieldName) return;
     if (extractedFields.some(f => f.name === fieldName)) {
@@ -467,37 +500,11 @@ export function TemplateEditor() {
     // Build marker with type if not str (default)
     const marker = dataType === 'str' ? `{{${fieldName}}}` : `{{${fieldName}:${dataType}}}`;
 
-    const newTemplateText = template.template.replace(selectedText, marker);
-    setTemplate(prev => ({
-      ...prev,
-      template: newTemplateText,
-    }));
-
-    // Also update referenceEmail body to show the variable
+    const newText = fullTemplateText.replace(selectedText, marker);
+    setFullTemplateText(newText);
+    if (originalBody) setOriginalBody(prev => prev.replace(selectedText, marker));
     if (referenceEmail) {
-      setReferenceEmail(prev => ({
-        ...prev,
-        body: prev.body.replace(selectedText, marker),
-      }));
-    }
-
-    // Also update originalBody if it exists
-    if (originalBody) {
-      setOriginalBody(prev => prev.replace(selectedText, marker));
-    }
-
-    setFullTemplateText(newTemplateText);
-
-    // Extract fields from the server using docthu
-    try {
-      const response = await api.extractTemplateFields({ template: newTemplateText });
-      const fields = response.data;
-      const extracted = fields.filter(f => f.kind === 'extract');
-      const assignments = fields.filter(f => f.kind === 'static_assign');
-      setExtractedFields(extracted);
-      setVariableAssignments(assignments);
-    } catch (e) {
-      console.error('Failed to extract fields:', e.message);
+      setReferenceEmail(prev => prev ? ({ ...prev, body: prev.body.replace(selectedText, marker) }) : null);
     }
 
     handleModalClose();
@@ -535,7 +542,10 @@ export function TemplateEditor() {
     }
     const existing = blockTaggedElements[elId];
     setSelectedElementId(elId);
+    // Show modal for block assignment (like text selection modal)
+    setBlockSelectedContent(el.textContent);
     setBlockTagName(existing ? existing.fieldName : '');
+    setIsBlockModalOpen(true);
 
     // Show selection overlay
     showSelectionOverlay(el);
@@ -640,11 +650,10 @@ export function TemplateEditor() {
     return clone.innerHTML;
   };
 
-  const confirmBlockTag = async () => {
+  const confirmBlockTag = () => {
     const name = blockTagName.trim().toLowerCase();
     if (!name || !selectedElementId) {
-      setSelectedElementId(null);
-      cleanupSelectionOverlay();
+      handleBlockModalClose();
       return;
     }
 
@@ -676,32 +685,27 @@ export function TemplateEditor() {
 
     if (newTemplateText === null) return;
 
-    setTemplate(prev => ({ ...prev, template: newTemplateText }));
     setFullTemplateText(newTemplateText);
     if (originalBody) setOriginalBody(newTemplateText);
     if (referenceEmail) {
       setReferenceEmail(prev => prev ? ({ ...prev, body: newTemplateText }) : null);
     }
 
-    // Extract fields from server
-    try {
-      const response = await api.extractTemplateFields({ template: newTemplateText });
-      const fields = response.data;
-      setExtractedFields(fields.filter(f => f.kind === 'extract'));
-      setVariableAssignments(fields.filter(f => f.kind === 'static_assign'));
-    } catch (e) {
-      console.error('Failed to extract fields:', e.message);
-    }
-
     // Reset selection
     setSelectedElementId(null);
     setBlockTagName('');
     cleanupSelectionOverlay();
+    setIsBlockModalOpen(false);
+    setBlockSelectedContent('');
   };
 
-  const cancelBlockTag = () => {
-    setSelectedElementId(null);
+  const handleBlockModalClose = () => {
+    setIsBlockModalOpen(false);
     setBlockTagName('');
+    setBlockSelectedContent('');
+    setVarMapWithConnection(false);
+    setVarSelectedConnField('');
+    setSelectedElementId(null);
     cleanupSelectionOverlay();
   };
 
@@ -715,7 +719,6 @@ export function TemplateEditor() {
 
     if (newTemplateText === null) return;
 
-    setTemplate(prev => ({ ...prev, template: newTemplateText }));
     setFullTemplateText(newTemplateText);
     if (originalBody) setOriginalBody(newTemplateText);
 
@@ -725,9 +728,6 @@ export function TemplateEditor() {
       delete next[elementId];
       return next;
     });
-
-    // Remove from extractedFields
-    setExtractedFields(prev => prev.filter(f => f.name !== tagInfo.fieldName));
   };
 
   const removeBlockTagByFieldName = (fieldName) => {
@@ -737,7 +737,7 @@ export function TemplateEditor() {
 
     // Restore original content for each element sequentially using the
     // DOM-based approach.
-    let newTemplateText = template.template;
+    let newTemplateText = fullTemplateText;
 
     entries.forEach(([elementId, tagInfo]) => {
       const tempResult = buildTemplateFromDOM(elementId, tagInfo.originalContent);
@@ -746,7 +746,6 @@ export function TemplateEditor() {
       }
     });
 
-    setTemplate(prev => ({ ...prev, template: newTemplateText }));
     setFullTemplateText(newTemplateText);
     if (originalBody) setOriginalBody(newTemplateText);
 
@@ -758,9 +757,6 @@ export function TemplateEditor() {
       });
       return next;
     });
-
-    // Remove from extractedFields
-    setExtractedFields(prev => prev.filter(f => f.name !== fieldName));
   };
 
   const renderBlockOverlays = () => {
@@ -925,75 +921,6 @@ export function TemplateEditor() {
               __html: highlightedBody,
             }}
           />
-          {/* Inline tag editor for block selection */}
-          {isBlockMode && selectedElementId && (() => {
-            const pos = getInlineEditorPosition();
-            if (!pos) return null;
-            const selectedEl = emailViewerRef.current?.querySelector(`[data-element-id="${selectedElementId}"]`);
-            const selectedContent = selectedEl ? selectedEl.textContent : '';
-            return (
-              <div
-                className="block-tag-editor absolute z-20 bg-white rounded-lg shadow-lg border border-gray-200 p-3 w-64"
-                style={{ top: pos.top, left: pos.left }}
-              >
-                <div className="mb-2">
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Selected Content</label>
-                  <div className="px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700 max-h-20 overflow-auto break-all">
-                    {selectedContent}
-                  </div>
-                </div>
-                <input
-                  type="text"
-                  value={blockTagName}
-                  onInput={(e) => setBlockTagName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') { e.preventDefault(); confirmBlockTag(); }
-                    else if (e.key === 'Escape') cancelBlockTag();
-                  }}
-                  placeholder="Variable name..."
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
-                  autoFocus
-                />
-                {/* Suggestions */}
-                {blockTagName.trim() && extractedFields.length > 0 && (
-                  <div className="mt-1 bg-white border border-gray-200 rounded shadow-sm max-h-28 overflow-auto">
-                    {extractedFields
-                      .filter(f => f.name.toLowerCase().includes(blockTagName.toLowerCase()) && f.name !== blockTagName)
-                      .map(f => (
-                        <button
-                          key={f.name}
-                          onClick={() => setBlockTagName(f.name)}
-                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2"
-                        >
-                          <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-                          <span className="text-gray-700">{f.name}</span>
-                        </button>
-                      ))}
-                  </div>
-                )}
-                <div className="flex items-center justify-end gap-2 mt-2">
-                  <button
-                    onClick={cancelBlockTag}
-                    className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
-                    title="Cancel"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  </button>
-                  <button
-                    onClick={confirmBlockTag}
-                    className="p-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white"
-                    title="Confirm"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
         </div>
       );
     }
@@ -1232,12 +1159,17 @@ export function TemplateEditor() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-medium text-gray-900">Fields</h3>
-                <button
-                  onClick={() => { setIsVarModalOpen(true) }}
-                  className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-                >
-                  + Add
-                </button>
+                <div className="flex items-center gap-2">
+                  {extractingFields && (
+                    <span className="text-xs text-gray-500 italic">Parsing…</span>
+                  )}
+                  <button
+                    onClick={() => { setIsVarModalOpen(true) }}
+                    className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                  >
+                    + Add
+                  </button>
+                </div>
               </div>
               <p className="text-sm text-gray-500 mb-3">
                 Define variables using Docthu syntax
@@ -1331,13 +1263,22 @@ export function TemplateEditor() {
                       </option>
                     ))}
                 </select>
-                <button
-                  onClick={handleTest}
-                  disabled={testing}
-                  className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
-                >
-                  {testing ? 'Testing...' : 'Test'}
-                </button>
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={handleTest}
+                    disabled={testing}
+                    className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                  >
+                    {testing ? 'Testing...' : 'Test'}
+                  </button>
+                  <button
+                    onClick={handleResetTemplate}
+                    disabled={!testEmailId}
+                    className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-200 disabled:opacity-50"
+                  >
+                    Reset Template
+                  </button>
+                </div>
                 {testResult && (
                   <div className={`mt-3 p-3 rounded text-sm ${testResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                     {testResult.success ? (
@@ -1355,6 +1296,101 @@ export function TemplateEditor() {
           </div>
         </div>
       </div>
+
+      {/* Modal for block assignment */}
+      {isBlockModalOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Create Variable from Block
+              </h3>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Selected Content
+                </label>
+                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-600 break-all">
+                  {blockSelectedContent}
+                </div>
+              </div>
+
+              {/* Map with connection field — only when a connection is selected */}
+              {selectedConnectionId && selectedConnectionFields.length > 0 && (
+                <div className="mb-6">
+                  <label className="flex items-center gap-2 cursor-pointer mb-2">
+                    <input
+                      type="checkbox"
+                      checked={varMapWithConnection}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setVarMapWithConnection(checked);
+                        if (!checked) {
+                          setVarSelectedConnField('');
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Map with connection field</span>
+                  </label>
+
+                  {varMapWithConnection && (
+                    <select
+                      value={varSelectedConnField}
+                      onChange={(e) => {
+                        const fieldName = e.target.value;
+                        setVarSelectedConnField(fieldName);
+                        if (fieldName) {
+                          setBlockTagName(fieldName);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select a field...</option>
+                      {selectedConnectionFields.filter(f => !f.isMapped).map((f) => (
+                        <option key={f.name} value={f.name}>
+                          {f.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              {!varMapWithConnection && <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Variable Name
+                </label>
+                <input
+                  type="text"
+                  value={blockTagName}
+                  ref={variableNameInput}
+                  onChange={(e) => setBlockTagName(e.target.value)}
+                  placeholder="Enter variable name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoComplete="off"
+                />
+              </div>}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleBlockModalClose}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmBlockTag}
+                  disabled={!blockTagName.trim()}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                >
+                  Add Variable
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal for creating variable from selected text */}
       {isModalOpen && (

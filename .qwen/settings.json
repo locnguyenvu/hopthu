@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(uv *)"
+      "Bash(uv *)",
+      "Bash(npm run *)"
     ]
   },
   "$version": 4
