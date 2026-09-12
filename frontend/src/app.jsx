@@ -1,16 +1,15 @@
 import { Router, Route, Switch } from 'wouter';
 import { useState, useCallback } from 'preact/hooks';
 import { createContext } from 'preact';
-import { Layout } from './components/Layout';
 import { GmailLayout } from './components/GmailLayout';
 import { ToastContainer } from './components/Toast';
-import { Inbox } from './pages/Inbox';
 import { AccountList } from './pages/AccountList';
 import { AccountForm } from './pages/AccountForm';
 import { AccountDetail } from './pages/AccountDetail';
 import { EmailDetail } from './pages/EmailDetail';
 import { TemplateList } from './pages/TemplateList';
 import { TemplateEditor } from './pages/TemplateEditor';
+import { TemplateEditor2 } from './pages/TemplateEditor2';
 import { ConnectionList } from './pages/ConnectionList';
 import { ConnectionForm } from './pages/ConnectionForm';
 import { ConnectionDetail } from './pages/ConnectionDetail';
@@ -58,6 +57,7 @@ export function App() {
           <Route path="/emails/:id" component={EmailDetail} />
           <Route path="/templates" component={TemplateList} />
           <Route path="/templates/new" component={TemplateEditor} />
+          <Route path="/templates2/new" component={TemplateEditor2} />
           <Route path="/templates/:id" component={TemplateEditor} />
           <Route path="/emails/:emailId/new-template" component={TemplateEditor} />
           <Route path="/connections" component={ConnectionList} />
