@@ -23,10 +23,13 @@ export function TemplateEditor2() {
   const [searchParams, _] = useSearchParams()
   const [variables, setVariables] = useState([])
   const [targetRect, setTargetRect] = useState(null)
+  const [staticVariables, setStaticVariables] = useState('')
+  const [previewType, setPreviewType] = useState('html')
 
   const emailPreview = useRef(null)
   const popoverModal = useRef(null)
   const assignInput = useRef(null)
+  const staticVariablesInput = useRef(null)
 
 
   useEffect(() => { // hook on enter the screen
@@ -43,9 +46,10 @@ export function TemplateEditor2() {
   useEffect(() => { // hook on the iframe element to trigger variable assign popover
     if (!isPopoverVisible || !targetRect || !popoverModal.current) {return;}
     const modalHeight = popoverModal.current.offsetHeight
+    const staticVariablesInputRect = staticVariablesInput.current.getBoundingClientRect()
     setPopoverStyle((prev) => ({
       ...prev,
-      top: targetRect.top - (modalHeight),
+      top: targetRect.top - (modalHeight) + staticVariablesInputRect.height,
       left: targetRect.left,
     }))
     if (popOverForm.originalTextContent) {
@@ -53,6 +57,10 @@ export function TemplateEditor2() {
     }
     assignInput.current.focus()
   }, [popOverForm, isPopoverVisible, targetRect])
+
+  const handlePreviewTypeChange = async (e) => {
+    setPreviewType(e.target.value)
+  }
 
   const openVariableAssignmentPopover = (data) => {
     const {targetId, targetRect, textContent, htmlContent, originalTextContent} = data
@@ -89,7 +97,11 @@ export function TemplateEditor2() {
 
     assignInput.current.value = ''
     setIsPopoverVisible(false)
-    await submit()
+    await testTemplate()
+  }
+
+  const handleConstantsChange = (e) => {
+    setStaticVariables(e.target.value)
   }
 
   const clearVariable = async (e) => {
@@ -107,16 +119,16 @@ export function TemplateEditor2() {
 
     assignInput.current.value = ''
     setIsPopoverVisible(false)
-    await submit()
+    await testTemplate()
   }
 
-  const submit = async () => {
+  const testTemplate = async () => {
     let templateStr = email.body
     for (const [_, replacement] of Object.entries(templateReplacements)) {
       templateStr = templateStr.replace(...replacement)
     }
-    setTemplateOutput(templateStr)
-    const result = await api.extractTemplateFields({template: templateStr})
+    setTemplateOutput(staticVariables + "\n" + templateStr)
+    const result = await api.extractTemplateFields({template: staticVariables + "\n" + templateStr})
     setVariables(result.data)
   }
 
@@ -185,77 +197,115 @@ export function TemplateEditor2() {
 
   return (
     <div class="size-screen">
-      <div class='flex justify-between p-3'>
-        <h1 class='grow text-ellipsis'>{email.subject}</h1>
-      </div>
-      <div class="flex gap-3 px-16 h-full">
-        <div class='container mx-auto'>
-            { email.id &&
-              (
-                <div class='relative h-dvh overflow-scroll'>
-                  <iframe
-                    ref={emailPreview}
-                    srcDoc={emailPreviewContent}
-                    class="w-full h-full"
-                    onLoad={handleLoaded}
-                  >
-                  </iframe>
-                  { isPopoverVisible &&
-                    <div ref={popoverModal} style={popOverStyle} className="shadow-lg p-3">
-                      <div class='content p-3'>
-                        <div class='inspected-content text-sm'>
-                          {popOverForm.originalTextContent || popOverForm.textContent}
-                        </div>
-                        <div class='assign-block mt-2'>
-                          <input
-                            ref={assignInput}
-                            type='text'
-                            placeholder='Variable name'
-                            class='w-full p-1 text-sm border border-neutral-200 rounded-sm'
-                          />
-                        </div>
-                      </div>
-                      <div class='footer flex justify-between border-t border-solid border-t-neutral-100 pt-2 gap-1'>
-                        <div class='flex flex-1 gap-1'>
-                          <button
-                            onClick={e => setVariable(e)}
-                            className="p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm">
-                              Set
-                          </button>
-                          {popOverForm.originalTextContent && <button
-                            onClick={e => clearVariable(e)}
-                            className="p-1 rounded-sm bg-neutral-500 text-white text-sm">
-                              Clear
-                          </button>}
-                        </div>
-                        <button
-                          onClick={e => setIsPopoverVisible(false)}
-                          className="p-1 rounded-sm bg-neutral-200 text-black text-sm">
-                            Close
-                        </button>
-                      </div>
+      {
+      !email.id ? (<div>...loading</div>) :
+      (
+        <div class="flex gap-3 h-full px-10 min-w-4xl max-w-6xl mx-auto mt-10">
+          <div class='grow w-2/3'>
+            <div class='py-2 flex place-content-between border-b-2'>
+              <div class='flex gap-3'>
+                <span class='flex gap-1'>
+                  <input type="radio" id="previewTypeHtml" value="html" name="previewType" onChange={handlePreviewTypeChange} checked={previewType === "html"} />
+                  <label for="previewTypeHtml">HTML</label>
+                </span>
+                <span class='flex gap-1'>
+                  <input type="radio" id="previewTypeRaw" value="raw" name="previewType" onChange={handlePreviewTypeChange} checked={previewType === "raw"} />
+                  <label for="previewTypeRaw">Raw</label>
+                </span>
+              </div>
+              <button class='p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm' onClick={testTemplate}>
+                Parse template
+              </button>
+            </div>
+            <div class='relative h-svh scrollbar-none'>
+              <textarea
+                ref={staticVariablesInput}
+                class='w-full h-[50px] text-sm rounded-md border-1 font-mono pt-1 pl-1'
+                style={{display: previewType === 'html' ? 'block' : 'none'}}
+                value={staticVariables} onChange={handleConstantsChange}
+              ></textarea>
+              <iframe
+                ref={emailPreview}
+                srcDoc={emailPreviewContent}
+                class="w-full h-full"
+                onLoad={handleLoaded}
+                style={{display: previewType === "html" ? 'block': 'none'}}
+              ></iframe>
+              <pre class="w-full font-mono text-pretty" style={{display: previewType === "raw" ? 'block': 'none'}}>
+                <code>{templateOutput || email.body}</code>
+              </pre>
+              { isPopoverVisible &&
+                <div ref={popoverModal} style={popOverStyle} className="shadow-lg p-3">
+                  <div class='content p-3'>
+                    <div class='inspected-content text-sm'>
+                      {popOverForm.originalTextContent || popOverForm.textContent}
                     </div>
-                  }
+                    <div class='assign-block mt-2'>
+                      <input
+                        ref={assignInput}
+                        type='text'
+                        placeholder='Variable name'
+                        class='w-full p-1 text-sm border border-neutral-200 rounded-sm'
+                      />
+                    </div>
+                  </div>
+                  <div class='footer flex justify-between border-t border-solid border-t-neutral-100 pt-2 gap-1'>
+                    <div class='flex flex-1 gap-1'>
+                      <button
+                        onClick={e => setVariable(e)}
+                        className="p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm">
+                          Set
+                      </button>
+                      {popOverForm.originalTextContent && <button
+                        onClick={e => clearVariable(e)}
+                        className="p-1 rounded-sm bg-neutral-500 text-white text-sm">
+                          Clear
+                      </button>}
+                    </div>
+                    <button
+                      onClick={e => setIsPopoverVisible(false)}
+                      className="p-1 rounded-sm bg-neutral-200 text-black text-sm">
+                        Close
+                    </button>
+                  </div>
                 </div>
-              )
-            }
-        </div>
-        <div class="w-1/3 flex flex-col gap-3">
-          <button class='p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm' onClick={submit}>
-            Submit
-          </button>
-          <div class='p-2 border-1 border-neutral-100 shadow-sm'>
-            <h1 class='text-lg font-semibold'>Variables</h1>
-            <div class='flex flex-col gap-1'>
-              {variables.map(v => (
-                <div class='p-1 border-dashed border-1 border-sky-300 bg-sky-100'>
-                  <span class='font-mono'>{v.name}</span>
+              }
+            </div>
+          </div>
+          <div class="w-1/3 flex flex-col gap-3">
+            <div class='p-2 border-1 border-neutral-100 shadow-sm rounded-sm'>
+              <h1 class='text-lg font-semibold'>Attributes</h1>
+              <div class='flex flex-col gap-3 px-1 mt-2 '>
+                <div class='flex flex-col gap-1'>
+                  <label for="fromEmail" class='text-sm'>From email</label>
+                  <input type="text" id="fromEmail" class='border-1 border-neutral-300 p-1' value={email.from_email} />
                 </div>
-              ))}
+                <div class='flex flex-col gap-1'>
+                  <label for="fromEmail" class='text-sm'>Name</label>
+                  <input type="text" id="fromEmail" class='border-1 border-neutral-300 p-1' value={email.subject} />
+                </div>
+              </div>
+            </div>
+            <div class='p-2 border-1 border-neutral-100 shadow-sm rounded-sm'>
+              <h1 class='text-lg font-semibold'>Variables</h1>
+              <div class='flex flex-col gap-1'>
+                {variables.map(v => (
+                  <div
+                    class={[
+                      'p-1', 'border-dashed', 'border-1',
+                      ...(v.kind === 'extract' ? ['border-orange-300', 'bg-orange-100'] : []),
+                      ...(v.kind === 'static_assign' ? ['border-sky-300', 'bg-sky-100'] : []),
+                    ].join(' ')}
+                  >
+                    <span class='font-mono'>{v.name}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )
+    }
     </div>
   )
 }
