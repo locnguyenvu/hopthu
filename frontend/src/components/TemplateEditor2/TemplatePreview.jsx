@@ -2,7 +2,24 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 
 const SELECTABLE_TAG_NAME = ['TD', 'SPAN', 'B', 'STRONG', 'I']
 
-export function TemplatePreview({ srcDoc, iframeRef, onElementClick, className, style }) {
+export function TemplatePreview({ srcDoc, iframeRef, offsetElementRef, onSet, onClear, className, style }) {
+  const [isPopoverVisible, setIsPopoverVisible] = useState(false)
+  const [popOverForm, setPopoverForm] = useState({})
+  const [targetRect, setTargetRect] = useState(null)
+
+  const openVariableAssignmentPopover = (data) => {
+    const {targetId, targetRect, textContent, htmlContent, originalTextContent} = data
+    setTargetRect(targetRect)
+    setPopoverForm({
+      htmlContent,
+      textContent,
+      targetId,
+      originalTextContent,
+    })
+    setIsPopoverVisible(true)
+  }
+
+  const closePopover = () => {setIsPopoverVisible(false)}
 
   const handleLoaded = () => {
     const iframe = iframeRef.current
@@ -58,7 +75,7 @@ export function TemplatePreview({ srcDoc, iframeRef, onElementClick, className, 
         const originalBlock = targetBlock.cloneNode(true)
         originalBlock.removeAttribute('data-element-id')
         originalBlock.removeAttribute('data-original-content')
-        onElementClick({
+        openVariableAssignmentPopover({
           targetId: e.target.getAttribute('data-target-id'),
           targetRect: targetBlock.getBoundingClientRect(),
           htmlContent: originalBlock.outerHTML,
@@ -73,12 +90,96 @@ export function TemplatePreview({ srcDoc, iframeRef, onElementClick, className, 
   useEffect(() => {handleLoaded()}, [iframeRef])
 
   return (
-    <iframe
-      ref={iframeRef}
-      srcDoc={srcDoc}
-      className={className}
-      style={style}
-      onLoad={() => {handleLoaded()}}
-    ></iframe>
+    <>
+      <iframe
+        ref={iframeRef}
+        srcDoc={srcDoc}
+        className={className}
+        style={style}
+        onLoad={() => {handleLoaded()}}
+      ></iframe>
+      { isPopoverVisible &&
+        <VariableAssignPopover
+          form={popOverForm}
+          targetRect={targetRect}
+          offsetElementRef={offsetElementRef}
+          onSet={(variableName) => {
+            closePopover()
+            onSet(variableName, popOverForm)
+          }}
+          onClear={() => {
+            closePopover()
+            onClear(popOverForm)
+          }}
+          onClose={closePopover}
+        />
+      }
+    </>
+  )
+}
+
+export function VariableAssignPopover({ form, targetRect, offsetElementRef, onSet, onClear, onClose }) {
+  const popoverModal = useRef(null)
+  const assignInput = useRef(null)
+  const [popOverStyle, setPopoverStyle] = useState({
+    display: 'block',
+    position: 'absolute',
+    backgroundColor: '#ffffff',
+    maxWidth: '450px',
+  })
+
+  useEffect(() => { // position below the static variables input, then prefill + focus
+    if (!targetRect || !popoverModal.current) {return;}
+    const modalHeight = popoverModal.current.offsetHeight
+    const offsetElementRect = offsetElementRef.current.getBoundingClientRect()
+    setPopoverStyle((prev) => ({
+      ...prev,
+      top: targetRect.top - (modalHeight) + offsetElementRect.height,
+      left: targetRect.left,
+    }))
+    if (form.originalTextContent) {
+      assignInput.current.value = form.textContent
+    }
+    assignInput.current.focus()
+  }, [form, targetRect])
+
+  return (
+    <div ref={popoverModal} style={popOverStyle} className="shadow-lg p-3">
+      <div class='content p-3'>
+        <div class='inspected-content text-sm'>
+          {form.originalTextContent || form.textContent}
+        </div>
+        <div class='assign-block mt-2'>
+          <form onSubmit={(e) => {e.preventDefault(); onSet(assignInput.current.value)}}>
+            <input
+              ref={assignInput}
+              type='text'
+              placeholder='Variable name'
+              class='w-full p-1 text-sm border border-neutral-200 rounded-sm'
+              autoFocus
+            />
+          </form>
+        </div>
+      </div>
+      <div class='footer flex justify-between border-t border-solid border-t-neutral-100 pt-2 gap-1'>
+        <div class='flex flex-1 gap-1'>
+          <button
+            onClick={() => onSet(assignInput.current.value)}
+            className="p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm">
+              Set
+          </button>
+          {form.originalTextContent && <button
+            onClick={onClear}
+            className="p-1 rounded-sm bg-neutral-500 text-white text-sm">
+              Clear
+          </button>}
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1 rounded-sm bg-neutral-200 text-black text-sm">
+            Close
+        </button>
+      </div>
+    </div>
   )
 }

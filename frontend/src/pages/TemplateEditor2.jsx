@@ -1,26 +1,28 @@
-import { useEffect, useState, useRef } from 'preact/hooks';
-import { useSearchParams } from 'wouter'
+import { useEffect, useState, useRef, useContext } from 'preact/hooks';
+import { useSearchParams, useLocation } from 'wouter'
 import { api } from '../api';
+import { ToastContext } from '../app';
 import { TemplatePreview } from '../components/TemplateEditor2/TemplatePreview';
-import { VariableAssignPopover } from '../components/TemplateEditor2/VariableAssignPopover';
 
 export function TemplateEditor2() {
   const [email, setEmail] = useState({
     id: null
   })
   const [emailPreviewContent, setEmailPreviewContent] = useState(null)
-  const [isPopoverVisible, setIsPopoverVisible] = useState(false)
-  const [popOverForm, setPopoverForm] = useState({})
   const [templateReplacements, setTemplateReplacements] = useState({})
   const [templateOutput, setTemplateOutput] = useState('')
   const [searchParams, _] = useSearchParams()
+  const [, setLocation] = useLocation()
   const [variables, setVariables] = useState([])
-  const [targetRect, setTargetRect] = useState(null)
   const [staticVariables, setStaticVariables] = useState('')
   const [previewType, setPreviewType] = useState('html')
+  const [dryRunResult, setDryRunResult] = useState(null)
+
+  const toast = useContext(ToastContext)
 
   const emailPreview = useRef(null)
   const staticVariablesInput = useRef(null)
+  const templateAttributeForm = useRef(null)
 
 
   useEffect(() => { // hook on enter the screen
@@ -37,19 +39,7 @@ export function TemplateEditor2() {
     setPreviewType(e.target.value)
   }
 
-  const openVariableAssignmentPopover = (data) => {
-    const {targetId, targetRect, textContent, htmlContent, originalTextContent} = data
-    setTargetRect(targetRect)
-    setPopoverForm({
-      htmlContent,
-      textContent,
-      targetId,
-      originalTextContent,
-    })
-    setIsPopoverVisible(true)
-  }
-
-  const setVariable = async (variableName) => {
+  const setVariable = async (variableName, popOverForm) => {
     const iframe = emailPreview.current
     if (!iframe) {return;}
 
@@ -75,7 +65,6 @@ export function TemplateEditor2() {
     }
     targetElement.innerText = variableName
 
-    setIsPopoverVisible(false)
     await parseTemplate(updatedReplacements)
   }
 
@@ -83,7 +72,7 @@ export function TemplateEditor2() {
     setStaticVariables(e.target.value)
   }
 
-  const clearVariable = async () => {
+  const clearVariable = async (popOverForm) => {
     const iframe = emailPreview.current
     if (!iframe) {return;}
 
@@ -98,7 +87,6 @@ export function TemplateEditor2() {
     delete updatedReplacements[popOverForm.targetId]
     setTemplateReplacements(updatedReplacements)
 
-    setIsPopoverVisible(false)
     await parseTemplate(updatedReplacements)
   }
 
@@ -122,6 +110,54 @@ export function TemplateEditor2() {
     setVariables(result.data)
   }
 
+  const checkTemplate = async () => {
+    const result = await api.extractTemplateFields({template: templateOutput})
+    setVariables(result.data)
+  }
+
+  const handleDryRun = async () => {
+    try {
+      const result = await api.dryRunTemplate({
+        email_id: email.id,
+        template: templateOutput,
+      })
+      setDryRunResult({data: result.data})
+    } catch (e) {
+      setDryRunResult({error: e.message})
+    }
+  }
+
+  const handleCreate = async () => {
+    if (!templateOutput.trim()) {
+      toast.error('Template is empty')
+      return
+    }
+    try {
+      const parseResult = await api.extractTemplateFields({template: templateOutput})
+      setVariables(parseResult.data)
+      if (parseResult.data.length === 0) {
+        toast.error('No variables found in the template')
+        return
+      }
+    } catch (e) {
+      toast.error('Failed to parse template: ' + e.message)
+      return
+    }
+    const formData = new FormData(templateAttributeForm.current)
+    try {
+      const result = await api.createTemplate({
+        from_email: formData.get('from_email'),
+        subject: formData.get('subject'),
+        content_type: formData.get('content_type'),
+        template: templateOutput,
+      })
+      toast.success('Template created')
+      setLocation(`/templates/${result.data.id}`)
+    } catch (e) {
+      toast.error('Failed to create: ' + e.message)
+    }
+  }
+
   return (
     <div class="size-screen">
       {
@@ -140,9 +176,12 @@ export function TemplateEditor2() {
                   <label for="previewTypeRaw">Raw</label>
                 </span>
               </div>
-              <button class='p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm' onClick={() => parseTemplate(templateReplacements)}>
+              {previewType === "html" && (<button class='p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm' onClick={() => parseTemplate(templateReplacements)}>
                 Parse template
-              </button>
+              </button>)}
+              {previewType === "raw" && (<button class='p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm' onClick={() => checkTemplate()}>
+                Check template
+              </button>)}
             </div>
             <div class='relative h-svh scrollbar-none'>
               <textarea
@@ -155,40 +194,39 @@ export function TemplateEditor2() {
                 iframeRef={emailPreview}
                 srcDoc={emailPreviewContent}
                 className="w-full h-full"
-                onElementClick={openVariableAssignmentPopover}
+                offsetElementRef={staticVariablesInput}
+                onSet={setVariable}
+                onClear={clearVariable}
                 style={{display: previewType === "html" ? 'block': 'none'}}
               ></TemplatePreview>
-              <pre
-                class="w-full font-mono text-pretty overflow-scroll"
-                style={{display: previewType === "raw" ? 'block': 'none'}}
-              >
-                <code>{templateOutput || email.body}</code>
-              </pre>
-              { isPopoverVisible &&
-                <VariableAssignPopover
-                  form={popOverForm}
-                  targetRect={targetRect}
-                  offsetElementRef={staticVariablesInput}
-                  onSet={setVariable}
-                  onClear={clearVariable}
-                  onClose={() => setIsPopoverVisible(false)}
-                />
-              }
+              <textarea
+                class='w-full font-mono text-sm text-pretty overflow-scroll'
+                style={{display: previewType === "raw" ? 'block': 'none', height: '100%'}}
+                value={templateOutput}
+                onChange={(e) => setTemplateOutput(e.target.value)}
+              ></textarea>
             </div>
           </div>
           <div class="w-1/3 flex flex-col gap-3">
             <div class='p-2 border-1 border-neutral-100 shadow-sm rounded-sm'>
-              <h1 class='text-lg font-semibold'>Attributes</h1>
-              <div class='flex flex-col gap-3 px-1 mt-2 '>
+              <h1 class='text-lg font-semibold'>Template attributes</h1>
+              <form ref={templateAttributeForm} id='templateAttribute' class='flex flex-col gap-3 px-1 mt-2 '>
                 <div class='flex flex-col gap-1'>
                   <label for="fromEmail" class='text-sm'>From email</label>
-                  <input type="text" id="fromEmail" class='border-1 border-neutral-300 p-1' autocomplete='off' value={email.from_email} />
+                  <input type="text" id="fromEmail" name="from_email" class='border-1 border-neutral-300 p-1' autocomplete='off' value={email.from_email} />
                 </div>
                 <div class='flex flex-col gap-1'>
-                  <label for="fromEmail" class='text-sm'>Name</label>
-                  <input type="text" id="fromEmail" class='border-1 border-neutral-300 p-1' autocomplete='off' value={email.subject} />
+                  <label for="name" class='text-sm'>Name</label>
+                  <input type="text" id="name" name="subject" class='border-1 border-neutral-300 p-1' autocomplete='off' value={email.subject} />
                 </div>
-              </div>
+                <div class='flex flex-col gap-1'>
+                  <label for="contentType" class='text-sm'>Content type</label>
+                  <select id="contentType" name="content_type" class='border-1 border-neutral-300 p-1' value='text/html'>
+                    <option value="text/html">text/html</option>
+                    <option value="text/plain">text/plain</option>
+                  </select>
+                </div>
+              </form>
             </div>
             <div class='p-2 border-1 border-neutral-100 shadow-sm rounded-sm'>
               <h1 class='text-lg font-semibold'>Variables</h1>
@@ -206,6 +244,28 @@ export function TemplateEditor2() {
                 ))}
               </div>
             </div>
+            <div class='flex gap-2'>
+              <button class='p-1 rounded-sm bg-gray-200 hover:bg-grey-100 text-black text-sm w-full' onClick={handleDryRun}>
+                Dry run
+              </button>
+              <button class='p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm w-full' onClick={handleCreate}>
+                Create
+              </button>
+            </div>
+            {dryRunResult && (
+              <div class='p-2 border-1 border-neutral-100 shadow-sm rounded-sm'>
+                <h1 class='text-lg font-semibold'>Dry run output</h1>
+                {dryRunResult.error ? (
+                  <div class='p-1 border-dashed border-1 border-red-300 bg-red-100 text-sm mt-2'>
+                    {dryRunResult.error}
+                  </div>
+                ) : (
+                  <pre class='p-2 border-1 border-neutral-200 rounded-sm text-sm bg-neutral-50 overflow-auto mt-2'>
+                    {JSON.stringify(dryRunResult.data, null, 2)}
+                  </pre>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )

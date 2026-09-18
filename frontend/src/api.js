@@ -96,6 +96,10 @@ export const api = {
     method: 'POST',
     body: JSON.stringify({ email_id: emailId }),
   }),
+  dryRunTemplate: (data) => request('/api/templates/dry-run', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
   getEmailTemplates: (emailId) => request(`/api/emails/${emailId}/templates`),
   reparseEmail: (id) => request(`/api/emails/${id}/reparse`, {
     method: 'POST',
