@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Link } from 'wouter'
 import { api } from '../api';
-import { Header2 } from '../components/Header2';
+import { Layout2 } from '../components/Layout2';
 
 export function Template2List() {
   const [templates, setTemplates] = useState(null)
@@ -24,7 +24,7 @@ export function Template2List() {
   }
 
   return (
-    <Header2 title="Templates">
+    <Layout2 title="Templates" breadcrumbs={[{label: 'Templates'}]}>
       <div class="size-full">
         {
         !templates ? (<div>...loading</div>) :
@@ -49,6 +49,6 @@ export function Template2List() {
         )
       }
       </div>
-    </Header2>
+    </Layout2>
   )
 }

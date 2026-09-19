@@ -3,7 +3,7 @@ import { useSearchParams, useLocation } from 'wouter'
 import { api } from '../api';
 import { ToastContext } from '../app';
 import { TemplateEditor2 } from '../components/TemplateEditor2/TemplateEditor2';
-import { Header2 } from '../components/Header2';
+import { Layout2 } from '../components/Layout2';
 
 export function Template2New() {
   const [email, setEmail] = useState({
@@ -28,6 +28,10 @@ export function Template2New() {
 
   useEffect(() => { // hook on enter the screen
     const emailId = searchParams.get('email_id')
+    if (!emailId) {
+      setLocation('/templates2')
+      return
+    }
     const fetchEmail = async () => {
       const response = await api.getEmail(emailId)
       setEmail(response.data)
@@ -153,14 +157,20 @@ export function Template2New() {
         template: templateOutput,
       })
       toast.success('Template created')
-      setLocation(`/templates/${result.data.id}`)
+      setLocation(`/templates2/${result.data.id}`)
     } catch (e) {
       toast.error('Failed to create: ' + e.message)
     }
   }
 
   return (
-    <Header2 title='New template'>
+    <Layout2
+      title='New template'
+      breadcrumbs={[
+        {label: 'Templates', href: '/templates2'},
+        {label: 'New'},
+      ]}
+    >
       <div class="size-full">
         {
         !email.id ? (<div>...loading</div>) :
@@ -178,10 +188,10 @@ export function Template2New() {
                     <label for="previewTypeRaw">Raw</label>
                   </span>
                 </div>
-                {previewType === "html" && (<button class='p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm' onClick={() => parseTemplate(templateReplacements)}>
+                {previewType === "html" && (<button class='p-1 px-2 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-xs' onClick={() => parseTemplate(templateReplacements)}>
                   Parse template
                 </button>)}
-                {previewType === "raw" && (<button class='p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm' onClick={() => checkTemplate()}>
+                {previewType === "raw" && (<button class='p-1 px-2 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-xs' onClick={() => checkTemplate()}>
                   Check template
                 </button>)}
               </div>
@@ -247,10 +257,10 @@ export function Template2New() {
                 </div>
               </div>
               <div class='flex gap-2'>
-                <button class='p-1 rounded-sm bg-gray-200 hover:bg-grey-100 text-black text-sm w-full' onClick={handleDryRun}>
+                <button class='p-1 rounded-sm bg-gray-200 hover:bg-grey-100 text-black text-xs w-full' onClick={handleDryRun}>
                   Dry run
                 </button>
-                <button class='p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm w-full' onClick={handleCreate}>
+                <button class='p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-xs w-full' onClick={handleCreate}>
                   Create
                 </button>
               </div>
@@ -273,6 +283,6 @@ export function Template2New() {
         )
       }
       </div>
-    </Header2>
+    </Layout2>
   )
 }
