@@ -1,5 +1,7 @@
 """Template management routes."""
 
+from types import SimpleNamespace
+
 from quart import Blueprint, request
 from sqlalchemy import select
 
@@ -61,6 +63,44 @@ async def extract_template_fields():
         return error_response(f"Failed to extract fields: {str(e)}"), 400
 
     return success_response(fields)
+
+
+@bp.route("/api/templates/dry-run", methods=["POST"])
+@api_login_required
+async def dry_run_template():
+    """Apply an unsaved template to an email and return the extracted variables."""
+    data = await request.get_json()
+    email_id = data.get("email_id")
+    template_str = data.get("template")
+
+    if not email_id:
+        return error_response("email_id is required"), 400
+    if not template_str:
+        return error_response("template is required"), 400
+
+    if not DocthuTemplate:
+        return error_response("docthu library is not available"), 500
+
+    async with AsyncSession() as session:
+        result = await session.execute(select(Email).where(Email.id == email_id))
+        email = result.scalar_one_or_none()
+
+        if not email:
+            return error_response("Email not found"), 404
+
+        try:
+            tpl = DocthuTemplate(template_str)
+            fields = tpl.variables()
+        except Exception as e:
+            return error_response(f"Failed to extract fields: {str(e)}"), 400
+
+        template_like = SimpleNamespace(template=template_str, fields=fields)
+        extracted = parse_email(template_like, email.body, email.content_type)
+
+        if not extracted:
+            return error_response("Template did not match the email content"), 400
+
+        return success_response(extracted)
 
 
 @bp.route("/api/templates", methods=["POST"])
