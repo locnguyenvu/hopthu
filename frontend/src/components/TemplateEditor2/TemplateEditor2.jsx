@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 
 const SELECTABLE_TAG_NAME = ['TD', 'SPAN', 'B', 'STRONG', 'I']
 
-export function TemplatePreview({ srcDoc, iframeRef, offsetElementRef, onSet, onClear, className, style }) {
+export function TemplateEditor2({ srcDoc, iframeRef, offsetElementRef, onSet, onClear, className, style }) {
   const [isPopoverVisible, setIsPopoverVisible] = useState(false)
   const [popOverForm, setPopoverForm] = useState({})
   const [targetRect, setTargetRect] = useState(null)

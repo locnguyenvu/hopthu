@@ -2,9 +2,9 @@ import { useEffect, useState, useRef, useContext } from 'preact/hooks';
 import { useSearchParams, useLocation } from 'wouter'
 import { api } from '../api';
 import { ToastContext } from '../app';
-import { TemplatePreview } from '../components/TemplateEditor2/TemplatePreview';
+import { TemplateEditor2 } from '../components/TemplateEditor2/TemplateEditor2';
 
-export function TemplateEditor2() {
+export function Template2New() {
   const [email, setEmail] = useState({
     id: null
   })
@@ -159,11 +159,11 @@ export function TemplateEditor2() {
   }
 
   return (
-    <div class="size-screen">
+    <div class="size-full">
       {
       !email.id ? (<div>...loading</div>) :
       (
-        <div class="flex gap-3 h-full px-10 min-w-4xl max-w-6xl mx-auto mt-10">
+        <div class="flex gap-3 h-full px-10 min-w-4xl max-w-8xl mx-auto mt-10">
           <div class='grow w-2/3'>
             <div class='py-2 flex place-content-between border-b-2'>
               <div class='flex gap-3'>
@@ -190,7 +190,7 @@ export function TemplateEditor2() {
                 style={{display: previewType === 'html' ? 'block' : 'none'}}
                 value={staticVariables} onChange={handleConstantsChange}
               ></textarea>
-              <TemplatePreview
+              <TemplateEditor2
                 iframeRef={emailPreview}
                 srcDoc={emailPreviewContent}
                 className="w-full h-full"
@@ -198,7 +198,7 @@ export function TemplateEditor2() {
                 onSet={setVariable}
                 onClear={clearVariable}
                 style={{display: previewType === "html" ? 'block': 'none'}}
-              ></TemplatePreview>
+              ></TemplateEditor2>
               <textarea
                 class='w-full font-mono text-sm text-pretty overflow-scroll'
                 style={{display: previewType === "raw" ? 'block': 'none', height: '100%'}}
