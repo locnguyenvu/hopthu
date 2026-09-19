@@ -10,7 +10,9 @@ import { EmailDetail } from './pages/EmailDetail';
 import { TemplateList } from './pages/TemplateList';
 import { TemplateEditor } from './pages/TemplateEditor';
 import { Template2New } from './pages/Template2New';
+import { Template2List } from './pages/Template2List';
 import { Template2Detail } from './pages/Template2Detail';
+import { Template2DetailEditor } from './pages/Template2DetailEditor';
 import { ConnectionList } from './pages/ConnectionList';
 import { ConnectionForm } from './pages/ConnectionForm';
 import { ConnectionDetail } from './pages/ConnectionDetail';
@@ -58,8 +60,10 @@ export function App() {
           <Route path="/emails/:id" component={EmailDetail} />
           <Route path="/templates" component={TemplateList} />
           <Route path="/templates/new" component={TemplateEditor} />
+          <Route path="/templates2" component={Template2List} />
           <Route path="/templates2/new" component={Template2New} />
           <Route path="/templates2/:id" component={Template2Detail} />
+          <Route path="/templates2/:id/editor" component={Template2DetailEditor} />
           <Route path="/templates/:id" component={TemplateEditor} />
           <Route path="/emails/:emailId/new-template" component={TemplateEditor} />
           <Route path="/connections" component={ConnectionList} />
