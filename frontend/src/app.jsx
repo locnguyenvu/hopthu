@@ -16,6 +16,7 @@ import { Template2DetailEditor } from './pages/Template2DetailEditor';
 import { ConnectionList } from './pages/ConnectionList';
 import { ConnectionForm } from './pages/ConnectionForm';
 import { ConnectionDetail } from './pages/ConnectionDetail';
+import { Trigger2Detail } from './pages/Trigger2Detail';
 import { TriggerEditor } from './pages/TriggerEditor';
 import { TriggerDetail } from './pages/TriggerDetail';
 import { getBase } from './lib/base';
@@ -72,6 +73,7 @@ export function App() {
           <Route path="/triggers/new" component={TriggerEditor} />
           <Route path="/triggers/:id/edit" component={TriggerEditor} />
           <Route path="/triggers/:id" component={TriggerDetail} />
+          <Route path="/triggers2/:id" component={Trigger2Detail} />
         </Switch>
       </Router>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
