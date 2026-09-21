@@ -3,11 +3,10 @@ import { useParams } from 'wouter'
 import { api } from '../api';
 import { ToastContext } from '../app';
 import { TemplateEditor2 } from '../components/TemplateEditor2/TemplateEditor2';
-import { Header2 } from '../components/Header2';
+import { Layout2 } from '../components/Layout2';
 
 export function Template2DetailEditor() {
   const params = useParams()
-  const [pageTitle, setPageTitle] = useState('')
   const [template, setTemplate] = useState({id: null})
   const [previewContent, setPreviewContent] = useState(null)
   const [previewType, setPreviewType] = useState('html')
@@ -33,8 +32,10 @@ export function Template2DetailEditor() {
 
   useEffect(() => {
     if (!template.id) {return}
+    if (template.content_type === 'text/plain') {
+      setPreviewType('raw')
+    }
     checkTemplate()
-    setPageTitle(`${template.id}: ${template.from_email} - ${template.subject}`)
   }, [template])
 
   const extractVariables = async (templateText) => {
@@ -104,7 +105,14 @@ export function Template2DetailEditor() {
   }
 
   return (
-    <Header2 title={pageTitle}>
+    <Layout2
+      title='Templates'
+      breadcrumbs={[
+        {label: 'Templates', href: '/templates2'},
+        {label: `id: ${template.id}`, href: `/templates2/${template.id}`},
+        {label: 'Edit template'},
+      ]}
+    >
       <div class="size-full">
         {
         !template.id ? (<div>...loading</div>) :
@@ -113,16 +121,20 @@ export function Template2DetailEditor() {
             <div class='grow w-2/3'>
               <div ref={previewHeaderRef} class='py-2 flex place-content-between border-b-2'>
                 <div class='flex gap-3'>
-                  <span class='flex gap-1'>
-                    <input type="radio" id="previewTypeHtml" value="html" name="previewType" onChange={handlePreviewTypeChange} checked={previewType === "html"} />
+                  {template.content_type === 'text/html' && (<span class='flex gap-1'>
+                    <input
+                      type="radio" id="previewTypeHtml" value="html" name="previewType"
+                      onChange={handlePreviewTypeChange}
+                      checked={previewType === "html"}
+                    />
                     <label for="previewTypeHtml">HTML</label>
-                  </span>
+                  </span>)}
                   <span class='flex gap-1'>
                     <input type="radio" id="previewTypeRaw" value="raw" name="previewType" onChange={handlePreviewTypeChange} checked={previewType === "raw"} />
                     <label for="previewTypeRaw">Raw</label>
                   </span>
                 </div>
-                {previewType === "raw" && (<button class='p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm' onClick={checkTemplate}>
+                {previewType === "raw" && (<button class='p-1 px-2 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-xs' onClick={checkTemplate}>
                   Check template
                 </button>)}
               </div>
@@ -171,6 +183,6 @@ export function Template2DetailEditor() {
         )
       }
       </div>
-    </Header2>
+    </Layout2>
   )
 }

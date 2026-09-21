@@ -155,6 +155,7 @@ async def get_trigger(id):
                 "id": template.id,
                 "from_email": template.from_email,
                 "subject": template.subject,
+                "fields": template.fields,
             }
             if template
             else None
