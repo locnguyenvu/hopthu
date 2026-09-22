@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useMemo } from 'preact/hooks';
+import { useState, useEffect, useContext } from 'preact/hooks';
 import { useParams, useLocation } from 'wouter';
 import { api } from '../api';
 import { ToastContext } from '../app';
@@ -34,32 +34,13 @@ export function Trigger2Detail() {
   const [fieldMappings, setFieldMappings] = useState({})
   const toast = useContext(ToastContext)
 
-  // Group connection fields by their first path segment (payload structure),
-  // e.g. 'from_account.bank_name' -> section 'from_account', leaf 'bank_name'.
-  // Root-level fields (no dot) have no section header.
-  const fieldGroups = useMemo(() => {
-    const groups = []
-    const index = new Map()
-    for (const field of trigger.connection?.fields || []) {
-      const dot = field.name.indexOf('.')
-      const key = dot === -1 ? '' : field.name.slice(0, dot)
-      const leaf = dot === -1 ? field.name : field.name.slice(dot + 1)
-      if (!index.has(key)) {
-        const group = {key, fields: []}
-        index.set(key, group)
-        groups.push(group)
-      }
-      index.get(key).fields.push({...field, leaf})
-    }
-    return groups
-  }, [trigger])
 
   useEffect(() => {
     const fetchTrigger = async () => {
       const response = await api.getTrigger(params.id)
       setTrigger(response.data)
       setBreadcrumbs([
-        {label: 'Templates', href: '/template2'},
+        {label: 'Templates', href: '/templates2'},
         {label: `id: ${response.data.template_id}`, href: `/templates2/${response.data.template_id}`},
         {label: `trigger: ${response.data.connection.name}`},
       ])
@@ -153,25 +134,15 @@ export function Trigger2Detail() {
           </button>
         </div>
         <div class="shadow-sm p-3 flex flex-col gap-1">
-          <h1 class="text-lg font-semibold">Connection: {trigger.connection.name}</h1>
-          <div class='grid grid-cols-2 w-full gap-px bg-gray-300 border border-gray-300'>
-            <div class='py-1 bg-gray-100 text-center font-semibold'>Field</div>
-            <div class='py-1 bg-gray-100 text-center font-semibold'>Source</div>
-            { fieldGroups.flatMap((group) => ([
-              group.key && (
-                <div class='py-1.5 px-2 bg-blue-50 col-span-2 flex items-center gap-2'>
-                  <span class='text-sm font-semibold text-blue-700'>{group.key}</span>
-                  <span class='px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 text-xs'>object</span>
+          <h1 class="text-lg font-semibold">Field mapping</h1>
+          <div class='flex flex-col'>
+            {trigger.connection.fields.map((field) => {
+              return (
+              <div class='flex gap-2 items-center py-2 border-b-1 border-gray-300'>
+                <div class='flex flex-col'>
+                  <div class='font-semibold'>{field.name} {field.required && (<span class='text-red-500'>*</span>)}:</div>
                 </div>
-              ),
-              ...group.fields.map((field) => ([
-                <div class={`py-1 px-1 bg-white ${group.key ? 'pl-6' : ''}`}>
-                  <div class='font-semibold' title={field.name}>{field.leaf} {field.required && (<span class='text-red-500'>*</span>)}</div>
-                  <div class='flex items-center gap-2'>
-                    <div class='px-1 font-semibold rounded-full bg-gray-100 text-xs'>{field.type}</div>
-                  </div>
-                </div>,
-                <div class='py-1 px-1 bg-white flex justify-between items-center'>
+                <div class='flex gap-1 p-1 border-dashed border-1 border-gray-300 bg-gray-50'>
                   {!fieldMappings[field.name] && (
                     <select class='border-1 border-color-gray-200 p-1 w-full rounded-sm'
                       onChange={(e) => {
@@ -210,10 +181,10 @@ export function Trigger2Detail() {
                       </div>
                     </>
                   )}
-                </div>,
-              ]))
-            ]))
-            }
+                </div>
+              </div>
+            )
+            })}
           </div>
         </div>
 
