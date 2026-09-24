@@ -1,4 +1,5 @@
 """Email routes."""
+from types import SimpleNamespace
 
 from datetime import datetime
 from quart import Blueprint, request
@@ -6,10 +7,11 @@ from quart import current_app
 from sqlalchemy import select, desc, and_
 
 from hopthu.app.db import AsyncSession
-from hopthu.app.models import Email, EmailData
+from hopthu.app.models import Email, EmailData, Template
 from hopthu.app.routes.auth import api_login_required
 from sqlalchemy.orm import selectinload
 from hopthu.app.services.sync import sync_account, sync_all
+from hopthu.app.services.parser import parse_email
 
 bp = Blueprint("emails", __name__)
 
@@ -169,3 +171,35 @@ async def trigger_sync_account(account_id):
     # Run sync as background task
     current_app.add_background_task(sync_account, account_id)
     return success_response({"message": "Sync started"}, None), 202
+
+
+
+@bp.route("/api/emails/<int:id>/template-dry-run", methods=["POST"])
+@api_login_required
+async def tempate_dry_run(id):
+    data = await request.get_json()
+    template_id = data.get("template_id")
+
+    if not template_id:
+        return error_response("template_id is required"), 400
+
+    async with AsyncSession() as session:
+        result = await session.execute(select(Email).where(Email.id == id))
+        email = result.scalar_one_or_none()
+
+        if not email:
+            return error_response("Email not found"), 404
+
+        result = await session.execute(select(Template).where(Template.id == template_id))
+        template = result.scalar_one_or_none()
+
+        if not template:
+            return error_response("Template not found"), 404
+
+        template_like = SimpleNamespace(template=template.template, fields=template.fields)
+        extracted = parse_email(template_like, email.body, email.content_type)
+
+        if not extracted:
+            return error_response("Template did not match the email content"), 400
+
+        return success_response(extracted)

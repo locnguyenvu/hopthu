@@ -1,235 +1,241 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
 :root {
-  /* Design System Colors */
-  --color-primary: #2563EB;
-  --color-primary-hover: #1D4ED8;
-  --color-on-primary: #FFFFFF;
-  --color-secondary: #3B82F6;
-  --color-accent: #DC2626;
-  --color-background: #FFFFFF;
-  --color-foreground: #0F172A;
-  --color-muted: #F1F5FD;
-  --color-muted-foreground: #64748B;
-  --color-border: #E4ECFC;
-  --color-border-hover: #CBD5E1;
-  --color-destructive: #DC2626;
-  --color-destructive-hover: #B91C1C;
-  --color-ring: #2563EB;
-  --color-success: #10B981;
-  --color-success-bg: #D1FAE5;
-  --color-warning: #F59E0B;
-  --color-warning-bg: #FEF3C7;
+	/* Design System Colors */
+	--color-primary: #2563eb;
+	--color-primary-hover: #1d4ed8;
+	--color-on-primary: #ffffff;
+	--color-secondary: #3b82f6;
+	--color-accent: #dc2626;
+	--color-background: #ffffff;
+	--color-foreground: #0f172a;
+	--color-muted: #f1f5fd;
+	--color-muted-foreground: #64748b;
+	--color-border: #e4ecfc;
+	--color-border-hover: #cbd5e1;
+	--color-destructive: #dc2626;
+	--color-destructive-hover: #b91c1c;
+	--color-ring: #2563eb;
+	--color-success: #10b981;
+	--color-success-bg: #d1fae5;
+	--color-warning: #f59e0b;
+	--color-warning-bg: #fef3c7;
 
-  /* Status Colors */
-  --status-new-bg: #F1F5FD;
-  --status-new-text: #475569;
-  --status-extracted-bg: #D1FAE5;
-  --status-extracted-text: #065F46;
-  --status-ignored-bg: #FEF3C7;
-  --status-ignored-text: #92400E;
-  --status-pushed-bg: #DBEAFE;
-  --status-pushed-text: #1E40AF;
+	/* Status Colors */
+	--status-new-bg: #f1f5fd;
+	--status-new-text: #475569;
+	--status-extracted-bg: #d1fae5;
+	--status-extracted-text: #065f46;
+	--status-ignored-bg: #fef3c7;
+	--status-ignored-text: #92400e;
+	--status-pushed-bg: #dbeafe;
+	--status-pushed-text: #1e40af;
 
-  /* Typography */
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+	/* Typography */
+	font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+	line-height: 1.5;
+	font-weight: 400;
 
-  /* Transitions */
-  --transition-fast: 150ms ease;
-  --transition-base: 200ms ease;
-  --transition-slow: 300ms ease;
+	/* Transitions */
+	--transition-fast: 150ms ease;
+	--transition-base: 200ms ease;
+	--transition-slow: 300ms ease;
 }
 
 /* Smooth scrolling */
 html {
-  scroll-behavior: smooth;
+	scroll-behavior: smooth;
 }
 
 body {
-  margin: 0;
-  min-height: 100vh;
-  background: var(--color-background);
-  color: var(--color-foreground);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	margin: 0;
+	min-height: 100vh;
+	background: var(--color-background);
+	color: var(--color-foreground);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 /* Focus styles */
 *:focus-visible {
-  outline: 2px solid var(--color-ring);
-  outline-offset: 2px;
+	outline: 2px solid var(--color-ring);
+	outline-offset: 2px;
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
 }
 
 /* Toast animation */
 @keyframes slide-in {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+	from {
+		transform: translateX(100%);
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
 }
 
 @keyframes slide-out {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(100%);
-    opacity: 0;
-  }
+	from {
+		transform: translateX(0);
+		opacity: 1;
+	}
+	to {
+		transform: translateX(100%);
+		opacity: 0;
+	}
 }
 
 .animate-slide-in {
-  animation: slide-in 0.3s ease-out;
+	animation: slide-in 0.3s ease-out;
 }
 
 .animate-slide-out {
-  animation: slide-out 0.2s ease-in;
+	animation: slide-out 0.2s ease-in;
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+	width: 8px;
+	height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-muted);
+	background: var(--color-muted);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border-hover);
-  border-radius: 4px;
+	background: var(--color-border-hover);
+	border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-muted-foreground);
+	background: var(--color-muted-foreground);
 }
 
 /* Mobile tap highlight */
 @media (hover: none) {
-  * {
-    -webkit-tap-highlight-color: transparent;
-  }
+	* {
+		-webkit-tap-highlight-color: transparent;
+	}
 }
 
 /* Safe area support for mobile */
 @supports (padding: max(0px)) {
-  .safe-area-top {
-    padding-top: max(env(safe-area-inset-top), 0px);
-  }
+	.safe-area-top {
+		padding-top: max(env(safe-area-inset-top), 0px);
+	}
 
-  .safe-area-bottom {
-    padding-bottom: max(env(safe-area-inset-bottom), 0px);
-  }
+	.safe-area-bottom {
+		padding-bottom: max(env(safe-area-inset-bottom), 0px);
+	}
 }
 
 /* Gmail-style specific styles */
 .gmail-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+	width: 8px;
+	height: 8px;
 }
 
 .gmail-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+	background: transparent;
 }
 
 .gmail-scrollbar::-webkit-scrollbar-thumb {
-  background: #dadce0;
-  border-radius: 4px;
+	background: #dadce0;
+	border-radius: 4px;
 }
 
 .gmail-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #bdc1c6;
+	background: #bdc1c6;
 }
 
 /* Hide scrollbar but keep functionality */
 .hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+	-ms-overflow-style: none;
+	scrollbar-width: none;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
-  display: none;
+	display: none;
 }
 
 /* Email list row hover effect */
 .email-row {
-  position: relative;
+	position: relative;
 }
 
 .email-row::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  background: transparent;
-  z-index: -1;
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background: transparent;
+	z-index: -1;
 }
 
 .email-row:hover::before {
-  background: #f2f6fc;
+	background: #f2f6fc;
 }
 
 /* Gmail blue accent colors */
 .gmail-blue {
-  color: #1a73e8;
+	color: #1a73e8;
 }
 
 .gmail-blue-bg {
-  background-color: #c2dbff;
+	background-color: #c2dbff;
 }
 
 .gmail-blue-border {
-  border-color: #1a73e8;
+	border-color: #1a73e8;
 }
 
 /* Gmail sidebar active state */
 .gmail-nav-active {
-  background-color: #d3e3fd;
-  color: #041e49;
-  font-weight: 500;
+	background-color: #d3e3fd;
+	color: #041e49;
+	font-weight: 500;
 }
 
 /* Gmail compose button style */
 .gmail-compose-btn {
-  background: #c2e7ff;
-  color: #001d35;
-  border-radius: 16px;
-  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
-  transition: box-shadow 0.08s linear, min-width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+	background: #c2e7ff;
+	color: #001d35;
+	border-radius: 16px;
+	box-shadow:
+		0 1px 2px 0 rgba(60, 64, 67, 0.3),
+		0 1px 3px 1px rgba(60, 64, 67, 0.15);
+	transition:
+		box-shadow 0.08s linear,
+		min-width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .gmail-compose-btn:hover {
-  box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+	box-shadow:
+		0 1px 3px 0 rgba(60, 64, 67, 0.3),
+		0 4px 8px 3px rgba(60, 64, 67, 0.15);
 }
 
 /* Selection highlight */
 .email-selected {
-  background-color: #c2dbff !important;
+	background-color: #c2dbff !important;
 }
 
 /* Smooth transitions for layout */
 .layout-transition {
-  transition: all 0.2s ease-out;
+	transition: all 0.2s ease-out;
 }
