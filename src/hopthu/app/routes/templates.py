@@ -33,11 +33,12 @@ def error_response(message):
 async def list_templates():
     """List all templates."""
     async with AsyncSession() as session:
-        result = await session.execute(
-            select(Template).order_by(
-                Template.from_email, Template.priority, Template.created_at
-            )
+        query = select(Template).order_by(
+            Template.from_email, Template.priority, Template.created_at
         )
+        if from_email := request.args.get('from_email'):
+            query = query.where(Template.from_email==from_email)
+        result = await session.execute(query)
         templates = result.scalars().all()
         return success_response(
             [{k: v for k, v in t.to_dict().items() if k != "fields"} for t in templates]
