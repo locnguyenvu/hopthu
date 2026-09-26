@@ -84,7 +84,7 @@ export function EmailViewer2({ id }) {
 			>
 				<div class="flex flex-col gap-3">
 					<div>Dry run result</div>
-					<pre class="p-2 text-xs bg-gray-300 font-mono">
+					<pre class="p-2 text-xs bg-gray-300 font-mono overflow-x-auto">
 						<code>{templateDryRunResult}</code>
 					</pre>
 					<div class="w-full flex justify-end">
@@ -117,7 +117,7 @@ export function EmailViewer2({ id }) {
 					{activeSection === "emailContent" && (
 						<>
 							<div class="w-full flex flex-col">
-								<iframe srcDoc={email.body} class="w-full min-h-svw" />
+								<iframe srcDoc={email.body} class="w-full h-svh" />
 							</div>
 						</>
 					)}
@@ -163,7 +163,7 @@ export function EmailViewer2({ id }) {
 													</div>
 													{extractedFromTemplate() === tpl.id && (
 														<div>
-															<pre class="text-xs font-mono bg-gray-100 p-1">
+															<pre class="text-xs font-mono bg-gray-100 p-1 overflow-x-auto">
 																<code>
 																	{JSON.stringify(
 																		email.email_data.data.extracted_data,

@@ -1,7 +1,6 @@
 import { Router, Route, Switch } from "wouter";
 import { useState, useCallback } from "preact/hooks";
 import { createContext } from "preact";
-import { GmailLayout } from "./components/GmailLayout";
 import { ToastContainer } from "./components/Toast";
 import { AccountList } from "./pages/AccountList";
 import { AccountForm } from "./pages/AccountForm";
@@ -18,6 +17,7 @@ import { ConnectionForm } from "./pages/ConnectionForm";
 import { ConnectionDetail } from "./pages/ConnectionDetail";
 import { Trigger2Detail } from "./pages/Trigger2Detail";
 import { Email2Detail } from "./pages/Email2Detail";
+import { Email2List } from "./pages/Email2List";
 import { TriggerEditor } from "./pages/TriggerEditor";
 import { TriggerDetail } from "./pages/TriggerDetail";
 import { getBase } from "./lib/base";
@@ -57,7 +57,7 @@ export function App() {
 		<ToastContext.Provider value={toast}>
 			<Router base={base}>
 				<Switch>
-					<Route path="/" component={GmailLayout} />
+					<Route path="/" component={Email2List} />
 					<Route path="/accounts" component={AccountList} />
 					<Route path="/accounts/new" component={AccountForm} />
 					<Route path="/accounts/:id/edit" component={AccountForm} />
@@ -77,6 +77,7 @@ export function App() {
 						path="/emails/:emailId/new-template"
 						component={TemplateEditor}
 					/>
+					<Route path="/emails2" component={Email2List} />
 					<Route path="emails2/:id" component={Email2Detail} />
 					<Route path="/connections" component={ConnectionList} />
 					<Route path="/connections/new" component={ConnectionForm} />
