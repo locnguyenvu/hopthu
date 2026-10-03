@@ -146,11 +146,10 @@ async def update_email_status(id):
         if not email:
             return error_response("Email not found"), 404
 
-        if "status" in data:
-            email.status = data["status"]
-
-        await session.commit()
-        await session.refresh(email)
+        if status := data.get("status"):
+            email.set_status(status)
+            await session.commit()
+            await session.refresh(email)
 
         return success_response(email.to_dict())
 

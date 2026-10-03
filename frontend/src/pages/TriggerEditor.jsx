@@ -332,7 +332,7 @@ export function TriggerEditor() {
 		if (!connectionId || !selectedConnection) {
 			return (
 				<nav className="text-sm text-gray-500 mb-4">
-					<a href={"/connections"} className="hover:text-blue-600">
+					<a href={"/settings/connections"} className="hover:text-blue-600">
 						Connections
 					</a>
 					<span className="mx-2">&gt;</span>
@@ -346,14 +346,14 @@ export function TriggerEditor() {
 		return (
 			<nav className="text-sm text-gray-500 mb-4">
 				<a
-					href={`/connections/${connectionId}#triggers`}
+					href={`/settings/connections/${connectionId}`}
 					className="hover:text-blue-600"
 				>
 					{selectedConnection.name}
 				</a>
 				<span className="mx-2">&gt;</span>
 				<a
-					href={`/connections/${connectionId}#triggers`}
+					href={`/settings/connections/${connectionId}`}
 					className="hover:text-blue-600"
 				>
 					Triggers

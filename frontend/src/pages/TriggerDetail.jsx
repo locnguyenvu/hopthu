@@ -375,14 +375,14 @@ export function TriggerDetail() {
 					{/* Breadcrumb */}
 					<nav className="text-sm text-gray-500 mb-4">
 						<Link
-							href={`/connections/${trigger.connection_id}`}
+							href={`/settings/connections/${trigger.connection_id}`}
 							className="hover:text-blue-600"
 						>
 							{connectionInfo}
 						</Link>
 						<span className="mx-2">&gt;</span>
 						<Link
-							href={`/connections/${trigger.connection_id}#triggers`}
+							href={`/settings/connections/${trigger.connection_id}`}
 							className="hover:text-blue-600"
 						>
 							Triggers

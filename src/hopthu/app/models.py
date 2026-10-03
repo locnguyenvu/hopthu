@@ -21,6 +21,7 @@ EMAIL_STATUS_NEW = "new"
 EMAIL_STATUS_EXTRACTED = "extracted"
 EMAIL_STATUS_IGNORED = "ignored"
 EMAIL_STATUS_PUSHED = "pushed"
+EMAIL_STATUS_ARCHIVED = "archived"
 
 
 class Base(DeclarativeBase):
@@ -155,6 +156,11 @@ class Email(Base):
             "received_at": self.received_at.isoformat() if self.received_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+    def set_status(self, status):
+        self.status = status
+        if self.status == EMAIL_STATUS_ARCHIVED:
+            self.body = None
 
 
 class Template(Base):
