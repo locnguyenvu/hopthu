@@ -53,7 +53,7 @@ async def list_emails():
         if from_email:
             filters.append(Email.from_email.ilike(f"%{from_email}%"))
         if status:
-            filters.append(Email.status == status)
+            filters.append(Email.status.in_(status.split(',')))
         if account_id:
             filters.append(Email.account_id == account_id)
         if mailbox_id:

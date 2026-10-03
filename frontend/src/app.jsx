@@ -105,7 +105,6 @@ function TitleSync() {
 	useEffect(() => {
 		const match = routes.find((r) => matchRoute(parser, r.path, location)[0]);
 		document.title = match ? `${match.title} · ${APP_NAME}` : BRAND_TITLE;
-    console.log(location, match)
 	}, [location, parser]);
 	return null;
 }
