@@ -57,6 +57,17 @@ export function EmailViewer2({ id }) {
 		return null;
 	};
 
+	const archived = async () => {
+		try {
+			const response = await api.updateEmailStatus(email.id, "archived");
+			setEmail(response.data);
+			toast.success("Email archived");
+		} catch (e) {
+			console.error(e);
+			toast.error(e.message);
+		}
+	};
+
 	const runTemplateDryRun = async (template_id) => {
 		try {
 			const response = await api.templateDryrun(email.id, template_id);
@@ -99,19 +110,27 @@ export function EmailViewer2({ id }) {
 				</div>
 			</dialog>
 			<div class="w-full flex flex-col gap-2 pr-3">
-				<div class="flex justify-center">
-					<div
-						class={className("emailContent")}
-						onclick={() => setActiveSection("emailContent")}
-					>
-						Email
-					</div>
-					<div
-						class={className("metaData")}
-						onclick={() => setActiveSection("metaData")}
-					>
-						Meta data
-					</div>
+				<div class="flex justify-between">
+          <div class="flex">
+            <div
+              class={className("emailContent")}
+              onclick={() => setActiveSection("emailContent")}
+            >
+              Email
+            </div>
+            <div
+              class={className("metaData")}
+              onclick={() => setActiveSection("metaData")}
+            >
+              Meta data
+            </div>
+          </div>
+          <div class="flex">
+            {email.status !== "archived" && <button
+              onclick={archived}
+              class="text-xs py-1 px-2 rounded-sm bg-gray-200"
+            >Archive</button>}
+          </div>
 				</div>
 				<div class="p-2">
 					{activeSection === "emailContent" && (
