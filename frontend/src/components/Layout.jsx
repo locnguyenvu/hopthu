@@ -1,82 +1,57 @@
-import { useState, useEffect } from "preact/hooks";
-import { Menu, X } from "lucide-react";
-import { Header } from "./Header";
-import { Sidebar } from "./Sidebar";
+import { Link, useLocation } from "wouter";
+import { Settings } from "lucide-react";
+import { getBase } from "../lib/base";
 
-export function Layout({ children }) {
-	const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-		const saved = localStorage.getItem("sidebarCollapsed");
-		return saved === "true";
-	});
-	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-	const [pageTitle, setPageTitle] = useState("Settings");
-
-	// Close mobile menu on navigation
-	useEffect(() => {
-		setMobileMenuOpen(false);
-	}, [location.pathname]);
-
-	// Persist sidebar state
-	useEffect(() => {
-		localStorage.setItem("sidebarCollapsed", sidebarCollapsed.toString());
-	}, [sidebarCollapsed]);
-
-	const toggleSidebar = () => {
-		setSidebarCollapsed(!sidebarCollapsed);
-	};
+export function Layout({ children, title, breadcrumbs }) {
+  const [location, setLocation] = useLocation()
 
 	return (
-		<div className="h-screen flex flex-col bg-[#f6f8fc] overflow-hidden">
-			{/* Top Bar */}
-			<Header
-				sidebarCollapsed={sidebarCollapsed}
-				toggleSidebar={toggleSidebar}
-				showPageTitle={true}
-				pageTitle={pageTitle}
-				showUserDropdown={true}
-			>
-				{/* Mobile Menu Button */}
-				<button
-					onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-					className="md:hidden p-2 rounded-full hover:bg-gray-100 transition-colors"
-				>
-					{mobileMenuOpen ? (
-						<X className="w-5 h-5 text-gray-600" />
-					) : (
-						<Menu className="w-5 h-5 text-gray-600" />
-					)}
-				</button>
-			</Header>
-
-			{/* Main Content Area */}
-			<div className="flex-1 flex overflow-hidden">
-				{/* Sidebar - Desktop */}
-				<div className="hidden md:block">
-					<Sidebar
-						collapsed={sidebarCollapsed}
-						onToggle={toggleSidebar}
-						onActiveChange={setPageTitle}
-					/>
-				</div>
-
-				{/* Mobile Sidebar Overlay */}
-				{mobileMenuOpen && (
-					<div className="md:hidden fixed inset-0 top-16 z-40 bg-[#f6f8fc]">
-						<Sidebar
-							mobile={true}
-							onActiveChange={(title) => {
-								setPageTitle(title);
-								setMobileMenuOpen(false);
-							}}
+		<>
+			<div class="w-full p-3 shadow-sm mb-5 flex items-center gap-2">
+				<div className="flex items-center gap-2">
+					<div className="w-8 h-8 flex items-center justify-center">
+						<img
+							src={`${getBase()}/icons.svg`}
+							width="64"
+							height="64"
+							alt="Mailbox Logo"
+              class="cursor-pointer"
+              onclick={() => setLocation('/')}
 						/>
 					</div>
-				)}
+					<span className="text-lg font-semibold text-gray-700">Hopthu</span>
+				</div>
 
-				{/* Content Area */}
-				<main className="flex-1 overflow-auto bg-white">
-					<div className="p-6 max-w-6xl mx-auto">{children}</div>
-				</main>
+				{title && <h1>{title}</h1>}
+
+				<div className="ml-auto flex items-center gap-2">
+					<Link
+						href="/settings"
+						aria-label="Settings"
+						title="Settings"
+						className="p-2 rounded-full text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+					>
+						<Settings className="w-5 h-5" />
+					</Link>
+				</div>
 			</div>
-		</div>
+			{breadcrumbs && (
+				<div class="flex items-center gap-1 text-sm text-neutral-500 mb-5 py-2 pl-2 mx-3 min-w-4xl max-w-8xl bg-neutral-100 shadow-sm">
+					{breadcrumbs.map((crumb, i) => (
+						<span key={i} class="flex items-center gap-1">
+							{i > 0 && <span>›</span>}
+							{crumb.href ? (
+								<Link href={crumb.href} class="hover:text-neutral-800">
+									{crumb.label}
+								</Link>
+							) : (
+								<span class="text-neutral-800">{crumb.label}</span>
+							)}
+						</span>
+					))}
+				</div>
+			)}
+			{children}
+		</>
 	);
 }

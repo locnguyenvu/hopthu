@@ -20,11 +20,11 @@ export function ToastContainer({ toasts, onRemove }) {
 		},
 		info: {
 			icon: Info,
-			bg: "bg-blue-50",
-			border: "border-blue-200",
-			text: "text-blue-800",
-			iconBg: "bg-blue-100",
-			iconColor: "text-blue-600",
+			bg: "bg-gray-100",
+			border: "border-gray-300",
+			text: "text-gray-800",
+			iconBg: "bg-gray-200",
+			iconColor: "text-gray-600",
 		},
 	};
 

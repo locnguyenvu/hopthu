@@ -2,10 +2,10 @@ import { useEffect, useState, useRef, useContext } from "preact/hooks";
 import { useParams } from "wouter";
 import { api } from "../api";
 import { ToastContext } from "../app";
-import { TemplateEditor2 } from "../components/TemplateEditor2/TemplateEditor2";
-import { Layout2 } from "../components/Layout2";
+import { TemplateEditor } from "../components/TemplateEditor/TemplateEditor";
+import { Layout } from "../components/Layout";
 
-export function Template2DetailEditor() {
+export function TemplateDetailEditor() {
 	const params = useParams();
 	const [template, setTemplate] = useState({ id: null });
 	const [previewContent, setPreviewContent] = useState(null);
@@ -132,11 +132,11 @@ export function Template2DetailEditor() {
 	};
 
 	return (
-		<Layout2
+		<Layout
 			title="Templates"
 			breadcrumbs={[
-				{ label: "Templates", href: "/templates2" },
-				{ label: `id: ${template.id}`, href: `/templates2/${template.id}` },
+				{ label: "Templates", href: "/settings/templates" },
+				{ label: `id: ${template.id}`, href: `/settings/templates/${template.id}` },
 				{ label: "Edit template" },
 			]}
 		>
@@ -178,7 +178,7 @@ export function Template2DetailEditor() {
 								</div>
 								{previewType === "raw" && (
 									<button
-										class="p-1 px-2 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-xs"
+										class="p-1 px-2 rounded-sm bg-gray-700 hover:bg-gray-600 text-white text-xs"
 										onClick={checkTemplate}
 									>
 										Check template
@@ -186,7 +186,7 @@ export function Template2DetailEditor() {
 								)}
 							</div>
 							<div class="relative h-svh scrollbar-none">
-								<TemplateEditor2
+								<TemplateEditor
 									iframeRef={previewRef}
 									srcDoc={previewContent}
 									className="w-full h-full"
@@ -194,7 +194,7 @@ export function Template2DetailEditor() {
 									onSet={setVariable}
 									onClear={clearVariable}
 									style={{ display: previewType === "html" ? "block" : "none" }}
-								></TemplateEditor2>
+								></TemplateEditor>
 								<textarea
 									class="w-full font-mono text-sm text-pretty overflow-scroll"
 									style={{
@@ -231,7 +231,7 @@ export function Template2DetailEditor() {
 							</div>
 							<div class="flex gap-2">
 								<button
-									class="p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-xs w-full"
+									class="p-1 rounded-sm bg-gray-700 hover:bg-gray-600 text-white text-xs w-full"
 									onClick={handleUpdate}
 								>
 									Update
@@ -241,6 +241,6 @@ export function Template2DetailEditor() {
 					</div>
 				)}
 			</div>
-		</Layout2>
+		</Layout>
 	);
 }

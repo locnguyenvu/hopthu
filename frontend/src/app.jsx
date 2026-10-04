@@ -9,18 +9,10 @@ import {
 import { useState, useCallback, useEffect } from "preact/hooks";
 import { createContext } from "preact";
 import { ToastContainer } from "./components/Toast";
+import { TemplateNew } from "./pages/TemplateNew";
+import { TemplateDetailEditor } from "./pages/TemplateDetailEditor";
 import { EmailDetail } from "./pages/EmailDetail";
-import { TemplateList } from "./pages/TemplateList";
-import { TemplateEditor } from "./pages/TemplateEditor";
-import { Template2New } from "./pages/Template2New";
-import { Template2List } from "./pages/Template2List";
-import { Template2Detail } from "./pages/Template2Detail";
-import { Template2DetailEditor } from "./pages/Template2DetailEditor";
-import { Trigger2Detail } from "./pages/Trigger2Detail";
-import { Email2Detail } from "./pages/Email2Detail";
-import { Email2List } from "./pages/Email2List";
-import { TriggerEditor } from "./pages/TriggerEditor";
-import { TriggerDetail } from "./pages/TriggerDetail";
+import { Emails } from "./pages/Emails";
 import {
 	EmailAccountsSettings,
 	EmailAccountDetailSettings,
@@ -28,6 +20,9 @@ import {
 	ConnectionsSettings,
 	ConnectionNewSettings,
 	ConnectionDetailSettings,
+	TemplatesSettings,
+	TemplateDetailSettings,
+	TriggerDetailSettings,
 } from "./pages/settings";
 import { getBase } from "./lib/base";
 
@@ -38,30 +33,18 @@ const APP_NAME = "Hopthu";
 const BRAND_TITLE = `${APP_NAME} — Mailbox & Workflow Automation`;
 
 const routes = [
-	{ path: "/", title: "Inbox", component: Email2List },
-	{ path: "/emails/:id", title: "Email", component: EmailDetail },
-	{ path: "/templates", title: "Templates", component: TemplateList },
-	{ path: "/templates/new", title: "New Template", component: TemplateEditor },
-	{ path: "/templates2", title: "Templates", component: Template2List },
-	{ path: "/templates2/new", title: "New Template", component: Template2New },
-	{ path: "/templates2/:id", title: "Template", component: Template2Detail },
+	{ path: "/", title: "Inbox", component: Emails },
+	{ path: "/settings/templates", title: "Templates", component: TemplatesSettings },
+	{ path: "/settings/templates/new", title: "New Template", component: TemplateNew },
+	{ path: "/settings/templates/:id", title: "Template", component: TemplateDetailSettings },
 	{
-		path: "/templates2/:id/editor",
+		path: "/settings/templates/:id/editor",
 		title: "Template Editor",
-		component: Template2DetailEditor,
+		component: TemplateDetailEditor,
 	},
-	{ path: "/templates/:id", title: "Edit Template", component: TemplateEditor },
-	{
-		path: "/emails/:emailId/new-template",
-		title: "New Template",
-		component: TemplateEditor,
-	},
-	{ path: "/emails2", title: "Emails", component: Email2List },
-	{ path: "emails2/:id", title: "Email", component: Email2Detail },
-	{ path: "/triggers/new", title: "New Trigger", component: TriggerEditor },
-	{ path: "/triggers/:id/edit", title: "Edit Trigger", component: TriggerEditor },
-	{ path: "/triggers/:id", title: "Trigger", component: TriggerDetail },
-	{ path: "/triggers2/:id", title: "Trigger", component: Trigger2Detail },
+	{ path: "/emails", title: "Emails", component: Emails },
+	{ path: "/emails/:id", title: "Email", component: EmailDetail },
+	{ path: "/settings/triggers/:id", title: "Trigger", component: TriggerDetailSettings },
 	{
 		path: "/settings",
 		title: "Settings",

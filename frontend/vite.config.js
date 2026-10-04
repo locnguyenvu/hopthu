@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
 import tailwindcss from '@tailwindcss/vite'
-import { DEFAULT_TIMEZONE } from './src/constants.js'
+
+const DEFAULT_TIMEZONE = 'Asia/Ho_Chi_Minh'
 
 // https://vite.dev/config/
 export default defineConfig({

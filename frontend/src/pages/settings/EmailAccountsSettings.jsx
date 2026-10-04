@@ -71,7 +71,7 @@ export function EmailAccountsSettings() {
 					</p>
 					<Link
 						href="/settings/email-accounts/new"
-						class="p-1 px-2 rounded-sm font-semibold bg-blue-500 hover:bg-blue-400 text-white text-xs"
+						class="p-1 px-2 rounded-sm font-semibold bg-gray-700 hover:bg-gray-600 text-white text-xs"
 					>
 						+ Add account
 					</Link>

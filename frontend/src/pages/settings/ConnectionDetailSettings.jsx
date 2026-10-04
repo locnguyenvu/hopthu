@@ -18,15 +18,15 @@ function Label({ children }) {
 }
 
 const inputClass =
-	"w-full px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-blue-400";
+	"w-full px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-gray-400";
 const rowInputClass =
-	"px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-blue-400";
+	"px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-gray-400";
 const addBtnClass =
 	"inline-flex items-center gap-1 p-1 px-2 rounded-sm font-semibold bg-neutral-200 text-black text-xs hover:bg-neutral-300";
 const removeBtnClass =
 	"p-1 rounded-sm text-gray-400 hover:text-red-600 hover:bg-red-50 shrink-0";
 const checkboxClass =
-	"h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500";
+	"h-4 w-4 rounded border-gray-300 accent-gray-700 text-gray-700 focus:ring-gray-600";
 
 export function ConnectionDetailSettings() {
 	const params = useParams();
@@ -396,7 +396,7 @@ export function ConnectionDetailSettings() {
 									<button
 										type="submit"
 										disabled={saving}
-										class="p-1 px-2 rounded-sm font-semibold bg-blue-500 hover:bg-blue-400 text-white text-xs disabled:opacity-50 disabled:hover:bg-blue-500"
+										class="p-1 px-2 rounded-sm font-semibold bg-gray-700 hover:bg-gray-600 text-white text-xs disabled:opacity-50 disabled:hover:bg-gray-700"
 									>
 										{saving ? "Saving…" : "Save"}
 									</button>

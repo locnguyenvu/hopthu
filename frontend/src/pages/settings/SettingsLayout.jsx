@@ -1,15 +1,16 @@
 import { Link } from "wouter";
-import { Mail, Link as LinkIcon } from "lucide-react";
-import { Layout2 } from "../../components/Layout2";
+import { Mail, Link as LinkIcon, FileText } from "lucide-react";
+import { Layout } from "../../components/Layout";
 
 export const SETTINGS_MENU = [
 	{ path: "/settings/email-accounts", label: "Email accounts", icon: Mail },
 	{ path: "/settings/connections", label: "Connections", icon: LinkIcon },
+	{ path: "/settings/templates", label: "Templates", icon: FileText },
 ];
 
-export function SettingsLayout({ active, breadcrumbs, children }) {
+export function SettingsLayout({ active, title = "Settings", breadcrumbs, children }) {
 	return (
-		<Layout2 title="Settings" breadcrumbs={breadcrumbs}>
+		<Layout title={title} breadcrumbs={breadcrumbs}>
 			<div class="mx-auto min-w-4xl max-w-8xl px-3 pb-10 flex gap-6">
 				{/* Left: menu bar */}
 				<aside class="w-56 shrink-0">
@@ -25,8 +26,8 @@ export function SettingsLayout({ active, breadcrumbs, children }) {
 										flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
 										${
 											isActive
-												? "bg-[#d3e3fd] text-[#041e49]"
-												: "text-[#444746] hover:bg-[#e9eef6]"
+												? "bg-gray-200 text-gray-900"
+												: "text-gray-700 hover:bg-gray-100"
 										}
 									`}
 								>
@@ -41,6 +42,6 @@ export function SettingsLayout({ active, breadcrumbs, children }) {
 				{/* Right: display content */}
 				<section class="flex-1 min-w-0">{children}</section>
 			</div>
-		</Layout2>
+		</Layout>
 	);
 }

@@ -18,7 +18,7 @@ function TextInput(props) {
 		<input
 			type="text"
 			{...props}
-			class="w-full px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+			class="w-full px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-gray-400"
 		/>
 	);
 }
@@ -224,7 +224,7 @@ export function EmailAccountDetailSettings() {
 										value={form.password}
 										onInput={setField("password")}
 										placeholder="Leave blank to keep current password"
-										class="w-full px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+										class="w-full px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-gray-400"
 									/>
 									<p class="mt-1 text-xs italic text-gray-500">
 										Only set if you want to change it. The new password
@@ -251,7 +251,7 @@ export function EmailAccountDetailSettings() {
                   <button
                     type="submit"
                     disabled={saving}
-                    class="p-1 px-2 rounded-sm font-semibold bg-blue-500 hover:bg-blue-400 text-white text-xs disabled:opacity-50 disabled:hover:bg-blue-500"
+                    class="p-1 px-2 rounded-sm font-semibold bg-gray-700 hover:bg-gray-600 text-white text-xs disabled:opacity-50 disabled:hover:bg-gray-700"
                   >
                     {saving ? "Saving…" : "Save"}
                   </button>
@@ -270,7 +270,7 @@ export function EmailAccountDetailSettings() {
 							type="button"
 							onClick={handleFetchMailboxes}
 							disabled={fetching}
-							class="p-1 px-2 rounded-sm font-semibold bg-blue-500 hover:bg-blue-400 text-white text-xs disabled:opacity-50 disabled:hover:bg-blue-500"
+							class="p-1 px-2 rounded-sm font-semibold bg-gray-700 hover:bg-gray-600 text-white text-xs disabled:opacity-50 disabled:hover:bg-gray-700"
 						>
 							{fetching ? "Fetching…" : "Fetch from IMAP"}
 						</button>
@@ -307,7 +307,7 @@ export function EmailAccountDetailSettings() {
 												type="checkbox"
 												checked={mailbox.is_active}
 												onChange={() => toggleMailbox(mailbox)}
-												class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+												class="h-4 w-4 rounded border-gray-300 accent-gray-700 text-gray-700 focus:ring-gray-600"
 											/>
 											<span class="text-xs font-semibold text-gray-600">
 												Sync
