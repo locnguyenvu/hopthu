@@ -9,9 +9,6 @@ import {
 import { useState, useCallback, useEffect } from "preact/hooks";
 import { createContext } from "preact";
 import { ToastContainer } from "./components/Toast";
-import { EmailDetail } from "./pages/EmailDetail";
-import { TemplateList } from "./pages/TemplateList";
-import { TemplateEditor } from "./pages/TemplateEditor";
 import { Template2New } from "./pages/Template2New";
 import { Template2List } from "./pages/Template2List";
 import { Template2Detail } from "./pages/Template2Detail";
@@ -19,8 +16,6 @@ import { Template2DetailEditor } from "./pages/Template2DetailEditor";
 import { Trigger2Detail } from "./pages/Trigger2Detail";
 import { Email2Detail } from "./pages/Email2Detail";
 import { Email2List } from "./pages/Email2List";
-import { TriggerEditor } from "./pages/TriggerEditor";
-import { TriggerDetail } from "./pages/TriggerDetail";
 import {
 	EmailAccountsSettings,
 	EmailAccountDetailSettings,
@@ -39,9 +34,6 @@ const BRAND_TITLE = `${APP_NAME} — Mailbox & Workflow Automation`;
 
 const routes = [
 	{ path: "/", title: "Inbox", component: Email2List },
-	{ path: "/emails/:id", title: "Email", component: EmailDetail },
-	{ path: "/templates", title: "Templates", component: TemplateList },
-	{ path: "/templates/new", title: "New Template", component: TemplateEditor },
 	{ path: "/templates2", title: "Templates", component: Template2List },
 	{ path: "/templates2/new", title: "New Template", component: Template2New },
 	{ path: "/templates2/:id", title: "Template", component: Template2Detail },
@@ -50,17 +42,8 @@ const routes = [
 		title: "Template Editor",
 		component: Template2DetailEditor,
 	},
-	{ path: "/templates/:id", title: "Edit Template", component: TemplateEditor },
-	{
-		path: "/emails/:emailId/new-template",
-		title: "New Template",
-		component: TemplateEditor,
-	},
 	{ path: "/emails2", title: "Emails", component: Email2List },
-	{ path: "emails2/:id", title: "Email", component: Email2Detail },
-	{ path: "/triggers/new", title: "New Trigger", component: TriggerEditor },
-	{ path: "/triggers/:id/edit", title: "Edit Trigger", component: TriggerEditor },
-	{ path: "/triggers/:id", title: "Trigger", component: TriggerDetail },
+	{ path: "/emails2/:id", title: "Email", component: Email2Detail },
 	{ path: "/triggers2/:id", title: "Trigger", component: Trigger2Detail },
 	{
 		path: "/settings",
