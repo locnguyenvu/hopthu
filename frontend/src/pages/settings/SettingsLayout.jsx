@@ -25,8 +25,8 @@ export function SettingsLayout({ active, breadcrumbs, children }) {
 										flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
 										${
 											isActive
-												? "bg-[#d3e3fd] text-[#041e49]"
-												: "text-[#444746] hover:bg-[#e9eef6]"
+												? "bg-gray-200 text-gray-900"
+												: "text-gray-700 hover:bg-gray-100"
 										}
 									`}
 								>

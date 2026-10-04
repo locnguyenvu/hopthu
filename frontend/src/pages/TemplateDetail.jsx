@@ -100,7 +100,7 @@ export function TemplateDetail() {
 								Edit template
 							</button>
 							<button
-								class="p-1 px-2 rounded-sm font-semibold bg-blue-500 hover:bg-blue-400 text-white text-xs"
+								class="p-1 px-2 rounded-sm font-semibold bg-gray-700 hover:bg-gray-600 text-white text-xs"
 								onClick={handleUpdate}
 							>
 								Save
@@ -159,7 +159,7 @@ export function TemplateDetail() {
 										{triggers.map((trigger) => (
 											<div
 												key={trigger.id}
-												class="cursor-default shadow-sm p-1 px-2 hover:bg-blue-50 rounded-lg"
+												class="cursor-default shadow-sm p-1 px-2 hover:bg-gray-50 rounded-lg"
 												onClick={() => {
 													setLocation(`/triggers/${trigger.id}`);
 												}}
@@ -202,7 +202,7 @@ export function TemplateDetail() {
 													</div>
 													<button
 														type="button"
-														class="p-1 px-2 rounded-sm font-semibold bg-blue-500 hover:bg-blue-400 text-white text-xs disabled:opacity-50 disabled:hover:bg-blue-500"
+														class="p-1 px-2 rounded-sm font-semibold bg-gray-700 hover:bg-gray-600 text-white text-xs disabled:opacity-50 disabled:hover:bg-gray-700"
 														disabled={!selectedConnectionId || creating}
 														onClick={handleCreateTrigger}
 													>

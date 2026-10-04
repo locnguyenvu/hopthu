@@ -225,14 +225,14 @@ export function VariableAssignPopover({
 				<div class="flex flex-1 gap-1">
 					<button
 						onClick={() => onSet(assignInput.current.value)}
-						className="p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-sm"
+						className="p-1 px-2 rounded-sm font-semibold bg-gray-700 hover:bg-gray-600 text-white text-xs"
 					>
 						Set
 					</button>
 					{form.originalTextContent && (
 						<button
 							onClick={onClear}
-							className="p-1 rounded-sm bg-neutral-500 text-white text-sm"
+							className="p-1 px-2 rounded-sm font-semibold bg-neutral-500 text-white text-xs"
 						>
 							Clear
 						</button>
@@ -240,7 +240,7 @@ export function VariableAssignPopover({
 				</div>
 				<button
 					onClick={onClose}
-					className="p-1 rounded-sm bg-neutral-200 text-black text-sm"
+					className="p-1 px-2 rounded-sm font-semibold bg-neutral-200 text-black text-xs"
 				>
 					Close
 				</button>

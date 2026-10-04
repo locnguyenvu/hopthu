@@ -178,7 +178,7 @@ export function TemplateDetailEditor() {
 								</div>
 								{previewType === "raw" && (
 									<button
-										class="p-1 px-2 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-xs"
+										class="p-1 px-2 rounded-sm bg-gray-700 hover:bg-gray-600 text-white text-xs"
 										onClick={checkTemplate}
 									>
 										Check template
@@ -231,7 +231,7 @@ export function TemplateDetailEditor() {
 							</div>
 							<div class="flex gap-2">
 								<button
-									class="p-1 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-xs w-full"
+									class="p-1 rounded-sm bg-gray-700 hover:bg-gray-600 text-white text-xs w-full"
 									onClick={handleUpdate}
 								>
 									Update

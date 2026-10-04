@@ -15,7 +15,7 @@ function Label({ children }) {
 }
 
 const inputClass =
-	"w-full px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-blue-400";
+	"w-full px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-gray-400";
 
 export function ConnectionNewSettings() {
 	const toast = useContext(ToastContext);
@@ -131,7 +131,7 @@ export function ConnectionNewSettings() {
 							<button
 								type="submit"
 								disabled={saving}
-								class="p-1 px-2 rounded-sm font-semibold bg-blue-500 hover:bg-blue-400 text-white text-xs disabled:opacity-50 disabled:hover:bg-blue-500"
+								class="p-1 px-2 rounded-sm font-semibold bg-gray-700 hover:bg-gray-600 text-white text-xs disabled:opacity-50 disabled:hover:bg-gray-700"
 							>
 								{saving ? "Creating…" : "Create connection"}
 							</button>

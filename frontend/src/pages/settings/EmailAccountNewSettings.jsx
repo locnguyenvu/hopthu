@@ -18,7 +18,7 @@ function TextInput(props) {
 		<input
 			type="text"
 			{...props}
-			class="w-full px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+			class="w-full px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-gray-400"
 		/>
 	);
 }
@@ -139,7 +139,7 @@ export function EmailAccountNewSettings() {
 									type="checkbox"
 									checked={form.is_ssl}
 									onInput={setField("is_ssl")}
-									class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+									class="h-4 w-4 rounded border-gray-300 accent-gray-700 text-gray-700 focus:ring-gray-600"
 								/>
 								<label
 									for="new-acct-is-ssl"
@@ -157,7 +157,7 @@ export function EmailAccountNewSettings() {
 									onInput={setField("password")}
 									placeholder="Your email password"
 									required
-									class="w-full px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+									class="w-full px-2 py-1 text-sm rounded-sm border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-gray-400"
 								/>
 								<p class="mt-1 text-xs italic text-gray-500">
 									The credentials are verified against the IMAP server
@@ -176,7 +176,7 @@ export function EmailAccountNewSettings() {
 							<button
 								type="submit"
 								disabled={saving}
-								class="p-1 px-2 rounded-sm font-semibold bg-blue-500 hover:bg-blue-400 text-white text-xs disabled:opacity-50 disabled:hover:bg-blue-500"
+								class="p-1 px-2 rounded-sm font-semibold bg-gray-700 hover:bg-gray-600 text-white text-xs disabled:opacity-50 disabled:hover:bg-gray-700"
 							>
 								{saving ? "Creating…" : "Create account"}
 							</button>

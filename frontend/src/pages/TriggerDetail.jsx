@@ -148,13 +148,13 @@ export function TriggerDetail() {
 				<div class="px-10 min-w-4xl max-w-8xl mx-auto flex flex-col gap-3">
 					<div class="flex justify-end gap-2">
 						<button
-							class={`p-1 px-2 rounded-sm text-xs font-semibold ${trigger.is_active ? "bg-neutral-200 text-black hover:bg-neutral-300" : "bg-blue-500 hover:bg-blue-400 text-white"}`}
+							class={`p-1 px-2 rounded-sm text-xs font-semibold ${trigger.is_active ? "bg-neutral-200 text-black hover:bg-neutral-300" : "bg-gray-700 hover:bg-gray-600 text-white"}`}
 							onClick={handleToggleActive}
 						>
 							{trigger.is_active ? "Deactivate" : "Activate"}
 						</button>
 						<button
-							class="p-1 px-2 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-xs font-semibold"
+							class="p-1 px-2 rounded-sm bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold"
 							onClick={handleUpdateFieldMappings}
 						>
 							Save mappings

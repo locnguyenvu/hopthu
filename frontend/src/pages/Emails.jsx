@@ -97,7 +97,7 @@ export function Emails() {
 						<button
 							type="button"
 							onClick={() => setStatusMenuOpen((open) => !open)}
-							className="text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded px-3 py-1 cursor-pointer"
+							className="text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded px-3 py-1 cursor-pointer"
 						>
 							Status: {statusLabel()}
 						</button>
