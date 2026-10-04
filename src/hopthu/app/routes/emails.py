@@ -11,6 +11,7 @@ from hopthu.app.models import Email, EmailData, Template
 from hopthu.app.routes.auth import api_login_required
 from sqlalchemy.orm import selectinload
 from hopthu.app.services.sync import sync_account, sync_all
+from hopthu.app.models import EMAIL_STATUS_EXTRACTED, EMAIL_STATUS_PUSHED
 from hopthu.app.services.parser import parse_email
 
 bp = Blueprint("emails", __name__)
@@ -124,12 +125,6 @@ async def get_email(id):
         # Include email_data if exists
         if email.email_data:
             data["email_data"] = email.email_data.to_dict()
-            data["email_data"]["template"] = (
-                email.email_data.template.to_dict()
-                if email.email_data.template
-                else None
-            )
-
         return success_response(data)
 
 
@@ -152,6 +147,107 @@ async def update_email_status(id):
             await session.refresh(email)
 
         return success_response(email.to_dict())
+
+
+@bp.route("/api/emails/<int:id>/data", methods=["POST"])
+@api_login_required
+async def save_email_data(id):
+    """Create or update extracted data for an email.
+
+    Payload: { "template_id": <int>, "extracted_data": <JSON object> }
+    """
+    data = await request.get_json(silent=True) or {}
+    template_id = data.get("template_id")
+    extracted_data = data.get("extracted_data")
+
+    if not template_id:
+        return error_response("template_id is required"), 400
+    if not isinstance(extracted_data, dict):
+        return error_response("extracted_data must be a JSON object"), 400
+
+    async with AsyncSession() as session:
+        result = await session.execute(select(Email).where(Email.id == id))
+        email = result.scalar_one_or_none()
+
+        if not email:
+            return error_response("Email not found"), 404
+
+        result = await session.execute(
+            select(Template).where(Template.id == template_id)
+        )
+        template = result.scalar_one_or_none()
+
+        if not template:
+            return error_response("Template not found"), 404
+
+        # Check if email_data already exists
+        result = await session.execute(
+            select(EmailData).where(EmailData.email_id == id)
+        )
+        existing = result.scalar_one_or_none()
+
+        payload = {
+            "meta_data": {"received_at": email.received_at.isoformat()},
+            "extracted_data": extracted_data,
+        }
+
+        if existing:
+            # Update existing
+            existing.template_id = template.id
+            existing.data = payload
+            email_data = existing
+        else:
+            # Create new
+            email_data = EmailData(
+                email_id=id,
+                template_id=template.id,
+                data=payload,
+            )
+            session.add(email_data)
+
+        # Update email status
+        email.status = EMAIL_STATUS_EXTRACTED
+        await session.commit()
+
+        await session.refresh(email_data)
+        return success_response(email_data.to_dict()), 201 if not existing else 200
+
+
+@bp.route("/api/emails/<int:id>/run-trigger", methods=["POST"])
+@api_login_required
+async def run_email_triggers(id):
+    """Run all active triggers for an email's extracted data."""
+    from hopthu.app.services.trigger import run_triggers_for_email
+
+    async with AsyncSession() as session:
+        result = await session.execute(select(Email).where(Email.id == id))
+        email = result.scalar_one_or_none()
+
+        if not email:
+            return error_response("Email not found"), 404
+
+        result = await session.execute(
+            select(EmailData).where(EmailData.email_id == id)
+        )
+        email_data = result.scalar_one_or_none()
+
+        if not email_data:
+            return error_response("Email has no extracted data"), 400
+
+        try:
+            logs = await run_triggers_for_email(id, connection=session)
+        except Exception as e:
+            return error_response(f"Trigger execution error: {e}"), 500
+
+        # Mark email as pushed if any trigger request succeeded
+        if (
+            any(log.status == "success" for log in logs)
+            and email.status != EMAIL_STATUS_PUSHED
+        ):
+            email.status = EMAIL_STATUS_PUSHED
+            await session.commit()
+
+        return success_response([log.to_dict() for log in logs])
 
 
 @bp.route("/api/sync", methods=["POST"])

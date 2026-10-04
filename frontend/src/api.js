@@ -83,6 +83,13 @@ export const api = {
 			method: "POST",
 			body: JSON.stringify({ template_id }),
 		}),
+	saveEmailData: (id, template_id, extracted_data) =>
+		request(`/api/emails/${id}/data`, {
+			method: "POST",
+			body: JSON.stringify({ template_id, extracted_data }),
+		}),
+	runEmailTriggers: (id) =>
+		request(`/api/emails/${id}/run-trigger`, { method: "POST" }),
 	syncAll: () => request("/api/sync", { method: "POST" }),
 	syncAccount: (id) => request(`/api/accounts/${id}/sync`, { method: "POST" }),
 
