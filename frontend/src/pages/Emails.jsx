@@ -3,12 +3,13 @@ import { EmailViewer } from "../components/EmailViewer";
 import { Layout } from "../components/Layout";
 import { api } from "../api";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { RefreshCw, Filter } from "lucide-react";
 import { useLocation } from "wouter";
 
 // Matches Tailwind's lg breakpoint
 const MOBILE_QUERY = "(max-width: 1023px)";
 
-const STATUS_OPTIONS = ["new", "extracted", "pushed", "ignored", "archived"];
+const STATUS_OPTIONS = ["new", "extracted", "pushed"];
 
 export function Emails() {
 	const [, setLocation] = useLocation();
@@ -97,8 +98,9 @@ export function Emails() {
 						<button
 							type="button"
 							onClick={() => setStatusMenuOpen((open) => !open)}
-							className="text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded px-3 py-1 cursor-pointer"
+							className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded px-3 py-1 cursor-pointer"
 						>
+							<Filter size={14} />
 							Status: {statusLabel()}
 						</button>
 						{statusMenuOpen && (
@@ -120,6 +122,15 @@ export function Emails() {
 							</div>
 						)}
 					</div>
+					<button
+						type="button"
+						onClick={loadEmails}
+						disabled={loading}
+						title="Refresh email list"
+						className="ml-2 text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded p-1.5 cursor-pointer"
+					>
+						<RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+					</button>
 				</div>
 				<div className="flex gap-3 flex-1 min-h-0">
 					<div className="w-full lg:w-1/4 shrink-0 bg-white border border-gray-200 rounded overflow-y-auto">
