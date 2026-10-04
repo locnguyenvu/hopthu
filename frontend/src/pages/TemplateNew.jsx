@@ -2,10 +2,10 @@ import { useEffect, useState, useRef, useContext } from "preact/hooks";
 import { useSearchParams, useLocation } from "wouter";
 import { api } from "../api";
 import { ToastContext } from "../app";
-import { TemplateEditor2 } from "../components/TemplateEditor2/TemplateEditor2";
-import { Layout2 } from "../components/Layout2";
+import { TemplateEditor } from "../components/TemplateEditor/TemplateEditor";
+import { Layout } from "../components/Layout";
 
-export function Template2New() {
+export function TemplateNew() {
 	const [email, setEmail] = useState({
 		id: null,
 	});
@@ -29,7 +29,7 @@ export function Template2New() {
 		// hook on enter the screen
 		const emailId = searchParams.get("email_id");
 		if (!emailId) {
-			setLocation("/templates2");
+			setLocation("/templates");
 			return;
 		}
 		const fetchEmail = async () => {
@@ -185,17 +185,17 @@ export function Template2New() {
 				template: templateOutput,
 			});
 			toast.success("Template created");
-			setLocation(`/templates2/${result.data.id}`);
+			setLocation(`/templates/${result.data.id}`);
 		} catch (e) {
 			toast.error("Failed to create: " + e.message);
 		}
 	};
 
 	return (
-		<Layout2
+		<Layout
 			title="New template"
 			breadcrumbs={[
-				{ label: "Templates", href: "/templates2" },
+				{ label: "Templates", href: "/templates" },
 				{ label: "New" },
 			]}
 		>
@@ -255,7 +255,7 @@ export function Template2New() {
 									value={staticVariables}
 									onChange={handleConstantsChange}
 								></textarea>
-								<TemplateEditor2
+								<TemplateEditor
 									iframeRef={emailPreview}
 									srcDoc={emailPreviewContent}
 									className="w-full h-full"
@@ -263,7 +263,7 @@ export function Template2New() {
 									onSet={setVariable}
 									onClear={clearVariable}
 									style={{ display: previewType === "html" ? "block" : "none" }}
-								></TemplateEditor2>
+								></TemplateEditor>
 								<textarea
 									class="w-full font-mono text-sm text-pretty overflow-scroll"
 									style={{
@@ -379,6 +379,6 @@ export function Template2New() {
 					</div>
 				)}
 			</div>
-		</Layout2>
+		</Layout>
 	);
 }

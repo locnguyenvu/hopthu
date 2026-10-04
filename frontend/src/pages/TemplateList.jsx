@@ -1,9 +1,9 @@
 import { useEffect, useState } from "preact/hooks";
 import { Link } from "wouter";
 import { api } from "../api";
-import { Layout2 } from "../components/Layout2";
+import { Layout } from "../components/Layout";
 
-export function Template2List() {
+export function TemplateList() {
 	const [templates, setTemplates] = useState(null);
 
 	useEffect(() => {
@@ -29,7 +29,7 @@ export function Template2List() {
 	};
 
 	return (
-		<Layout2 title="Templates" breadcrumbs={[{ label: "Templates" }]}>
+		<Layout title="Templates" breadcrumbs={[{ label: "Templates" }]}>
 			<div class="size-full">
 				{!templates ? (
 					<div>...loading</div>
@@ -45,7 +45,7 @@ export function Template2List() {
 										{groupTemplates.map((t) => (
 											<Link
 												key={t.id}
-												href={`/templates2/${t.id}`}
+												href={`/templates/${t.id}`}
 												class="p-2 border-b-1 border-neutral-300 hover:bg-neutral-200"
 											>
 												<div class="flex place-content-between">
@@ -65,6 +65,6 @@ export function Template2List() {
 					</div>
 				)}
 			</div>
-		</Layout2>
+		</Layout>
 	);
 }

@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Mail, Link as LinkIcon } from "lucide-react";
-import { Layout2 } from "../../components/Layout2";
+import { Layout } from "../../components/Layout";
 
 export const SETTINGS_MENU = [
 	{ path: "/settings/email-accounts", label: "Email accounts", icon: Mail },
@@ -9,7 +9,7 @@ export const SETTINGS_MENU = [
 
 export function SettingsLayout({ active, breadcrumbs, children }) {
 	return (
-		<Layout2 title="Settings" breadcrumbs={breadcrumbs}>
+		<Layout title="Settings" breadcrumbs={breadcrumbs}>
 			<div class="mx-auto min-w-4xl max-w-8xl px-3 pb-10 flex gap-6">
 				{/* Left: menu bar */}
 				<aside class="w-56 shrink-0">
@@ -41,6 +41,6 @@ export function SettingsLayout({ active, breadcrumbs, children }) {
 				{/* Right: display content */}
 				<section class="flex-1 min-w-0">{children}</section>
 			</div>
-		</Layout2>
+		</Layout>
 	);
 }

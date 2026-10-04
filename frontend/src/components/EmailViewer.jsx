@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { ToastContext } from "../app";
 import { api } from "../api";
 
-export function EmailViewer2({ id }) {
+export function EmailViewer({ id }) {
 	const toast = useContext(ToastContext);
 	const [email, setEmail] = useState(null);
 	const [activeSection, setActiveSection] = useState("emailContent");
@@ -232,7 +232,7 @@ export function EmailViewer2({ id }) {
 									<div class="font-semibold text-xl">Templates</div>
 									<Link
 										class="text-xs font-semibold"
-										href={`/templates2/new?email_id=${email.id}`}
+										href={`/templates/new?email_id=${email.id}`}
 									>
 										Add new
 									</Link>
@@ -244,7 +244,7 @@ export function EmailViewer2({ id }) {
 												<div class="p-1 px-2 border-b-1 border-gray-300 flex flex-col gap-2">
 													<div class="flex justify-between">
 														<div>
-															<Link key={tpl.id} href={`/templates2/${tpl.id}`}>
+															<Link key={tpl.id} href={`/templates/${tpl.id}`}>
 																<span
 																	class={
 																		tpl.id === extractedFromTemplate()

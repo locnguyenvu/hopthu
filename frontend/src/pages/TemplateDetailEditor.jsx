@@ -2,10 +2,10 @@ import { useEffect, useState, useRef, useContext } from "preact/hooks";
 import { useParams } from "wouter";
 import { api } from "../api";
 import { ToastContext } from "../app";
-import { TemplateEditor2 } from "../components/TemplateEditor2/TemplateEditor2";
-import { Layout2 } from "../components/Layout2";
+import { TemplateEditor } from "../components/TemplateEditor/TemplateEditor";
+import { Layout } from "../components/Layout";
 
-export function Template2DetailEditor() {
+export function TemplateDetailEditor() {
 	const params = useParams();
 	const [template, setTemplate] = useState({ id: null });
 	const [previewContent, setPreviewContent] = useState(null);
@@ -132,11 +132,11 @@ export function Template2DetailEditor() {
 	};
 
 	return (
-		<Layout2
+		<Layout
 			title="Templates"
 			breadcrumbs={[
-				{ label: "Templates", href: "/templates2" },
-				{ label: `id: ${template.id}`, href: `/templates2/${template.id}` },
+				{ label: "Templates", href: "/templates" },
+				{ label: `id: ${template.id}`, href: `/templates/${template.id}` },
 				{ label: "Edit template" },
 			]}
 		>
@@ -186,7 +186,7 @@ export function Template2DetailEditor() {
 								)}
 							</div>
 							<div class="relative h-svh scrollbar-none">
-								<TemplateEditor2
+								<TemplateEditor
 									iframeRef={previewRef}
 									srcDoc={previewContent}
 									className="w-full h-full"
@@ -194,7 +194,7 @@ export function Template2DetailEditor() {
 									onSet={setVariable}
 									onClear={clearVariable}
 									style={{ display: previewType === "html" ? "block" : "none" }}
-								></TemplateEditor2>
+								></TemplateEditor>
 								<textarea
 									class="w-full font-mono text-sm text-pretty overflow-scroll"
 									style={{
@@ -241,6 +241,6 @@ export function Template2DetailEditor() {
 					</div>
 				)}
 			</div>
-		</Layout2>
+		</Layout>
 	);
 }

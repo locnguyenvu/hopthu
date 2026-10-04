@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Settings } from "lucide-react";
 import { getBase } from "../lib/base";
 
-export function Layout2({ children, title, breadcrumbs }) {
+export function Layout({ children, title, breadcrumbs }) {
   const [location, setLocation] = useLocation()
 
 	return (

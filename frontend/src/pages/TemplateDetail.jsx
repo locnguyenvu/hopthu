@@ -2,9 +2,9 @@ import { useEffect, useState, useRef, useContext } from "preact/hooks";
 import { useParams, useLocation, Link } from "wouter";
 import { api } from "../api";
 import { ToastContext } from "../app";
-import { Layout2 } from "../components/Layout2";
+import { Layout } from "../components/Layout";
 
-export function Template2Detail() {
+export function TemplateDetail() {
 	const params = useParams();
 	const [, setLocation] = useLocation();
 	const [template, setTemplate] = useState({ id: null });
@@ -71,7 +71,7 @@ export function Template2Detail() {
 				field_mappings: [],
 			});
 			toast.success("Trigger created");
-			setLocation(`/triggers2/${response.data.id}`);
+			setLocation(`/triggers/${response.data.id}`);
 		} catch (e) {
 			toast.error("Failed to create trigger: " + e.message);
 		} finally {
@@ -80,10 +80,10 @@ export function Template2Detail() {
 	};
 
 	return (
-		<Layout2
+		<Layout
 			title="Templates"
 			breadcrumbs={[
-				{ label: "Templates", href: "/templates2" },
+				{ label: "Templates", href: "/templates" },
 				{ label: `id: ${template.id}` },
 			]}
 		>
@@ -95,7 +95,7 @@ export function Template2Detail() {
 						<div class="flex justify-end gap-2">
 							<button
 								class="p-1 px-2 rounded-sm font-semibold bg-neutral-200 text-black text-xs"
-								onClick={() => setLocation(`/templates2/${template.id}/editor`)}
+								onClick={() => setLocation(`/templates/${template.id}/editor`)}
 							>
 								Edit template
 							</button>
@@ -161,7 +161,7 @@ export function Template2Detail() {
 												key={trigger.id}
 												class="cursor-default shadow-sm p-1 px-2 hover:bg-blue-50 rounded-lg"
 												onClick={() => {
-													setLocation(`/triggers2/${trigger.id}`);
+													setLocation(`/triggers/${trigger.id}`);
 												}}
 											>
 												<div class="flex items-center justify-between gap-2">
@@ -235,6 +235,6 @@ export function Template2Detail() {
 					</div>
 				)}
 			</div>
-		</Layout2>
+		</Layout>
 	);
 }

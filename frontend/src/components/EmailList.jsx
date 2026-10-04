@@ -12,7 +12,7 @@ function formatDate(dateStr) {
 	return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export function EmailList2({ emails, loading, selectedEmailId, onSelect }) {
+export function EmailList({ emails, loading, selectedEmailId, onSelect }) {
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center h-32">

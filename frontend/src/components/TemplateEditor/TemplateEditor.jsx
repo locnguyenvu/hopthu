@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 
 const SELECTABLE_TAG_NAME = ["TD", "SPAN", "B", "STRONG", "I"];
 
-export function TemplateEditor2({
+export function TemplateEditor({
 	srcDoc,
 	iframeRef,
 	offsetElementRef,

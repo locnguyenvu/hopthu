@@ -1,6 +1,6 @@
-import { EmailList2 } from "../components/EmailList2";
-import { EmailViewer2 } from "../components/EmailViewer2";
-import { Layout2 } from "../components/Layout2";
+import { EmailList } from "../components/EmailList";
+import { EmailViewer } from "../components/EmailViewer";
+import { Layout } from "../components/Layout";
 import { api } from "../api";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { useLocation } from "wouter";
@@ -10,7 +10,7 @@ const MOBILE_QUERY = "(max-width: 1023px)";
 
 const STATUS_OPTIONS = ["new", "extracted", "pushed", "ignored", "archived"];
 
-export function Email2List() {
+export function Emails() {
 	const [, setLocation] = useLocation();
 	const [isMobile, setIsMobile] = useState(() =>
 		window.matchMedia(MOBILE_QUERY).matches,
@@ -83,14 +83,14 @@ export function Email2List() {
 
 	const handleSelect = (id) => {
 		if (isMobile) {
-			setLocation(`/emails2/${id}`);
+			setLocation(`/emails/${id}`);
 		} else {
 			setSelectedEmailId(id);
 		}
 	};
 
 	return (
-		<Layout2>
+		<Layout>
 			<div className="flex flex-col gap-3 mx-3 h-[calc(100vh-5rem)]">
 				<div className="shrink-0 relative bg-white border border-gray-200 rounded px-3 py-2 flex items-center">
 					<div ref={statusMenuRef} className="relative">
@@ -126,7 +126,7 @@ export function Email2List() {
 						{error ? (
 							<div className="p-4 text-sm text-red-600">{error}</div>
 						) : (
-							<EmailList2
+							<EmailList
 								emails={emails}
 								loading={loading}
 								selectedEmailId={selectedEmailId}
@@ -136,7 +136,7 @@ export function Email2List() {
 					</div>
 					<div className="hidden lg:block w-3/4 bg-white border border-gray-200 rounded overflow-y-auto p-3">
 						{selectedEmailId ? (
-							<EmailViewer2
+							<EmailViewer
 								key={selectedEmailId}
 								id={selectedEmailId}
 							/>
@@ -148,6 +148,6 @@ export function Email2List() {
 					</div>
 				</div>
 			</div>
-		</Layout2>
+		</Layout>
 	);
 }

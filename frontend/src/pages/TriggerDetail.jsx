@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from "preact/hooks";
 import { useParams, useLocation } from "wouter";
 import { api } from "../api";
 import { ToastContext } from "../app";
-import { Layout2 } from "../components/Layout2";
+import { Layout } from "../components/Layout";
 
 const EMAIL_FIELDS = ["from_email", "received_at", "subject", "to_email"];
 
@@ -33,7 +33,7 @@ function SourceValue({ source }) {
 	);
 }
 
-export function Trigger2Detail() {
+export function TriggerDetail() {
 	const params = useParams();
 	const [, setLocation] = useLocation();
 	const [breadcrumbs, setBreadcrumbs] = useState([]);
@@ -48,10 +48,10 @@ export function Trigger2Detail() {
 			const response = await api.getTrigger(params.id);
 			setTrigger(response.data);
 			setBreadcrumbs([
-				{ label: "Templates", href: "/templates2" },
+				{ label: "Templates", href: "/templates" },
 				{
 					label: `id: ${response.data.template_id}`,
-					href: `/templates2/${response.data.template_id}`,
+					href: `/templates/${response.data.template_id}`,
 				},
 				{ label: `trigger: ${response.data.connection.name}` },
 			]);
@@ -136,14 +136,14 @@ export function Trigger2Detail() {
 		try {
 			await api.deleteTrigger(trigger.id);
 			toast.success("Trigger deleted");
-			setLocation(`/templates2/${trigger.template_id}`);
+			setLocation(`/templates/${trigger.template_id}`);
 		} catch (e) {
 			toast.error("Failed to delete: " + e.message);
 		}
 	};
 
 	return (
-		<Layout2 breadcrumbs={breadcrumbs}>
+		<Layout breadcrumbs={breadcrumbs}>
 			{trigger.id ? (
 				<div class="px-10 min-w-4xl max-w-8xl mx-auto flex flex-col gap-3">
 					<div class="flex justify-end gap-2">
@@ -248,6 +248,6 @@ export function Trigger2Detail() {
 			) : (
 				<div>Loading...</div>
 			)}
-		</Layout2>
+		</Layout>
 	);
 }
