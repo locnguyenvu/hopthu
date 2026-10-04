@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef, useContext } from "preact/hooks";
 import { useParams, useLocation, Link } from "wouter";
-import { api } from "../api";
-import { ToastContext } from "../app";
-import { Layout } from "../components/Layout";
+import { ArrowLeft } from "lucide-react";
+import { api } from "../../api";
+import { ToastContext } from "../../app";
+import { SettingsLayout } from "./SettingsLayout";
 
-export function TemplateDetail() {
+export function TemplateDetailSettings() {
 	const params = useParams();
 	const [, setLocation] = useLocation();
 	const [template, setTemplate] = useState({ id: null });
@@ -71,7 +72,7 @@ export function TemplateDetail() {
 				field_mappings: [],
 			});
 			toast.success("Trigger created");
-			setLocation(`/triggers/${response.data.id}`);
+			setLocation(`/settings/triggers/${response.data.id}`);
 		} catch (e) {
 			toast.error("Failed to create trigger: " + e.message);
 		} finally {
@@ -80,32 +81,43 @@ export function TemplateDetail() {
 	};
 
 	return (
-		<Layout
-			title="Templates"
-			breadcrumbs={[
-				{ label: "Templates", href: "/templates" },
-				{ label: `id: ${template.id}` },
-			]}
-		>
+		<SettingsLayout active="/settings/templates">
+			<div class="flex items-center gap-4 min-w-0 mb-1">
+				<Link
+					href="/settings/templates"
+					class="shrink-0 mt-1 p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+					aria-label="Back to templates"
+				>
+					<ArrowLeft class="w-4 h-4" />
+				</Link>
+				<div class="min-w-0 flex-1">
+					<h2 class="text-lg font-semibold text-gray-800 truncate">
+						{template.subject ||
+							(template.id ? `Template #${template.id}` : "Template")}
+					</h2>
+				</div>
+				{template.id && (
+					<div class="shrink-0 flex items-center gap-2">
+						<button
+							class="p-1 px-2 rounded-sm font-semibold bg-neutral-200 text-black text-xs hover:bg-neutral-300"
+							onClick={() => setLocation(`/settings/templates/${template.id}/editor`)}
+						>
+							Edit template
+						</button>
+						<button
+							class="p-1 px-2 rounded-sm font-semibold bg-gray-700 hover:bg-gray-600 text-white text-xs"
+							onClick={handleUpdate}
+						>
+							Save
+						</button>
+					</div>
+				)}
+			</div>
 			<div class="size-full">
 				{!template.id ? (
 					<div>...loading</div>
 				) : (
-					<div class="flex flex-col gap-2 h-full px-10 min-w-4xl max-w-8xl mx-auto">
-						<div class="flex justify-end gap-2">
-							<button
-								class="p-1 px-2 rounded-sm font-semibold bg-neutral-200 text-black text-xs"
-								onClick={() => setLocation(`/templates/${template.id}/editor`)}
-							>
-								Edit template
-							</button>
-							<button
-								class="p-1 px-2 rounded-sm font-semibold bg-gray-700 hover:bg-gray-600 text-white text-xs"
-								onClick={handleUpdate}
-							>
-								Save
-							</button>
-						</div>
+					<div class="flex flex-col gap-2 h-full">
 						<div class="p-3 border-1 border-neutral-100 shadow-sm rounded-sm">
 							<h1 class="text-lg font-semibold">Template attributes</h1>
 							<form ref={attributeForm} class="flex flex-col gap-3 px-1 mt-2 ">
@@ -161,7 +173,7 @@ export function TemplateDetail() {
 												key={trigger.id}
 												class="cursor-default shadow-sm p-1 px-2 hover:bg-gray-50 rounded-lg"
 												onClick={() => {
-													setLocation(`/triggers/${trigger.id}`);
+													setLocation(`/settings/triggers/${trigger.id}`);
 												}}
 											>
 												<div class="flex items-center justify-between gap-2">
@@ -235,6 +247,6 @@ export function TemplateDetail() {
 					</div>
 				)}
 			</div>
-		</Layout>
+		</SettingsLayout>
 	);
 }

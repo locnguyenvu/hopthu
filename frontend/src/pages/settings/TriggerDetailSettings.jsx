@@ -1,8 +1,9 @@
 import { useState, useEffect, useContext } from "preact/hooks";
-import { useParams, useLocation } from "wouter";
-import { api } from "../api";
-import { ToastContext } from "../app";
-import { Layout } from "../components/Layout";
+import { useParams, useLocation, Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+import { api } from "../../api";
+import { ToastContext } from "../../app";
+import { SettingsLayout } from "./SettingsLayout";
 
 const EMAIL_FIELDS = ["from_email", "received_at", "subject", "to_email"];
 
@@ -33,10 +34,9 @@ function SourceValue({ source }) {
 	);
 }
 
-export function TriggerDetail() {
+export function TriggerDetailSettings() {
 	const params = useParams();
 	const [, setLocation] = useLocation();
-	const [breadcrumbs, setBreadcrumbs] = useState([]);
 	const [trigger, setTrigger] = useState({ id: null });
 	const [templateFields, setTemplateFields] = useState({ unmapped: [] });
 	const [emailFields, setEmailFields] = useState({ unmapped: [] });
@@ -47,14 +47,6 @@ export function TriggerDetail() {
 		const fetchTrigger = async () => {
 			const response = await api.getTrigger(params.id);
 			setTrigger(response.data);
-			setBreadcrumbs([
-				{ label: "Templates", href: "/templates" },
-				{
-					label: `id: ${response.data.template_id}`,
-					href: `/templates/${response.data.template_id}`,
-				},
-				{ label: `trigger: ${response.data.connection.name}` },
-			]);
 			setFieldMappings(toMappingDict(response.data.field_mappings));
 		};
 		fetchTrigger();
@@ -136,17 +128,31 @@ export function TriggerDetail() {
 		try {
 			await api.deleteTrigger(trigger.id);
 			toast.success("Trigger deleted");
-			setLocation(`/templates/${trigger.template_id}`);
+			setLocation(`/settings/templates/${trigger.template_id}`);
 		} catch (e) {
 			toast.error("Failed to delete: " + e.message);
 		}
 	};
 
 	return (
-		<Layout breadcrumbs={breadcrumbs}>
-			{trigger.id ? (
-				<div class="px-10 min-w-4xl max-w-8xl mx-auto flex flex-col gap-3">
-					<div class="flex justify-end gap-2">
+		<SettingsLayout active="/settings/templates">
+			<div class="flex items-center gap-4 min-w-0 mb-1">
+				<Link
+					href={`/settings/templates/${trigger.template_id}`}
+					class="shrink-0 mt-1 p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+					aria-label="Back to template"
+				>
+					<ArrowLeft class="w-4 h-4" />
+				</Link>
+				<div class="min-w-0 flex-1">
+					<h2 class="text-lg font-semibold text-gray-800 truncate">
+						{trigger.id
+							? trigger.connection.name
+							: "Trigger"}
+					</h2>
+				</div>
+				{trigger.id && (
+					<div class="shrink-0 flex items-center gap-2">
 						<button
 							class={`p-1 px-2 rounded-sm text-xs font-semibold ${trigger.is_active ? "bg-neutral-200 text-black hover:bg-neutral-300" : "bg-gray-700 hover:bg-gray-600 text-white"}`}
 							onClick={handleToggleActive}
@@ -157,7 +163,7 @@ export function TriggerDetail() {
 							class="p-1 px-2 rounded-sm bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold"
 							onClick={handleUpdateFieldMappings}
 						>
-							Save mappings
+							Save
 						</button>
 						<button
 							class="p-1 px-2 rounded-sm bg-red-500 hover:bg-red-400 text-white text-xs font-semibold"
@@ -166,6 +172,10 @@ export function TriggerDetail() {
 							Delete
 						</button>
 					</div>
+				)}
+			</div>
+			{trigger.id ? (
+				<div class="flex flex-col gap-3">
 					<div class="shadow-sm p-3 flex flex-col gap-1">
 						<h1 class="text-lg font-semibold">Field mapping</h1>
 						<div class="flex flex-col">
@@ -248,6 +258,6 @@ export function TriggerDetail() {
 			) : (
 				<div>Loading...</div>
 			)}
-		</Layout>
+		</SettingsLayout>
 	);
 }

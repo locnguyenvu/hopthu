@@ -232,7 +232,7 @@ export function EmailViewer({ id }) {
 									<div class="font-semibold text-xl">Templates</div>
 									<Link
 										class="text-xs font-semibold"
-										href={`/templates/new?email_id=${email.id}`}
+										href={`/settings/templates/new?email_id=${email.id}`}
 									>
 										Add new
 									</Link>
@@ -244,7 +244,7 @@ export function EmailViewer({ id }) {
 												<div class="p-1 px-2 border-b-1 border-gray-300 flex flex-col gap-2">
 													<div class="flex justify-between">
 														<div>
-															<Link key={tpl.id} href={`/templates/${tpl.id}`}>
+															<Link key={tpl.id} href={`/settings/templates/${tpl.id}`}>
 																<span
 																	class={
 																		tpl.id === extractedFromTemplate()

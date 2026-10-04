@@ -29,7 +29,7 @@ export function TemplateNew() {
 		// hook on enter the screen
 		const emailId = searchParams.get("email_id");
 		if (!emailId) {
-			setLocation("/templates");
+			setLocation("/settings/templates");
 			return;
 		}
 		const fetchEmail = async () => {
@@ -185,7 +185,7 @@ export function TemplateNew() {
 				template: templateOutput,
 			});
 			toast.success("Template created");
-			setLocation(`/templates/${result.data.id}`);
+			setLocation(`/settings/templates/${result.data.id}`);
 		} catch (e) {
 			toast.error("Failed to create: " + e.message);
 		}
@@ -195,7 +195,7 @@ export function TemplateNew() {
 		<Layout
 			title="New template"
 			breadcrumbs={[
-				{ label: "Templates", href: "/templates" },
+				{ label: "Templates", href: "/settings/templates" },
 				{ label: "New" },
 			]}
 		>

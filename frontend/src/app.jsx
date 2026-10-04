@@ -10,10 +10,7 @@ import { useState, useCallback, useEffect } from "preact/hooks";
 import { createContext } from "preact";
 import { ToastContainer } from "./components/Toast";
 import { TemplateNew } from "./pages/TemplateNew";
-import { TemplateList } from "./pages/TemplateList";
-import { TemplateDetail } from "./pages/TemplateDetail";
 import { TemplateDetailEditor } from "./pages/TemplateDetailEditor";
-import { TriggerDetail } from "./pages/TriggerDetail";
 import { EmailDetail } from "./pages/EmailDetail";
 import { Emails } from "./pages/Emails";
 import {
@@ -23,6 +20,9 @@ import {
 	ConnectionsSettings,
 	ConnectionNewSettings,
 	ConnectionDetailSettings,
+	TemplatesSettings,
+	TemplateDetailSettings,
+	TriggerDetailSettings,
 } from "./pages/settings";
 import { getBase } from "./lib/base";
 
@@ -34,17 +34,17 @@ const BRAND_TITLE = `${APP_NAME} — Mailbox & Workflow Automation`;
 
 const routes = [
 	{ path: "/", title: "Inbox", component: Emails },
-	{ path: "/templates", title: "Templates", component: TemplateList },
-	{ path: "/templates/new", title: "New Template", component: TemplateNew },
-	{ path: "/templates/:id", title: "Template", component: TemplateDetail },
+	{ path: "/settings/templates", title: "Templates", component: TemplatesSettings },
+	{ path: "/settings/templates/new", title: "New Template", component: TemplateNew },
+	{ path: "/settings/templates/:id", title: "Template", component: TemplateDetailSettings },
 	{
-		path: "/templates/:id/editor",
+		path: "/settings/templates/:id/editor",
 		title: "Template Editor",
 		component: TemplateDetailEditor,
 	},
 	{ path: "/emails", title: "Emails", component: Emails },
 	{ path: "/emails/:id", title: "Email", component: EmailDetail },
-	{ path: "/triggers/:id", title: "Trigger", component: TriggerDetail },
+	{ path: "/settings/triggers/:id", title: "Trigger", component: TriggerDetailSettings },
 	{
 		path: "/settings",
 		title: "Settings",

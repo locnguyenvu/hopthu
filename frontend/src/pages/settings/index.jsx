@@ -5,3 +5,6 @@ export { EmailAccountDetailSettings } from "./EmailAccountDetailSettings";
 export { ConnectionsSettings } from "./ConnectionsSettings";
 export { ConnectionNewSettings } from "./ConnectionNewSettings";
 export { ConnectionDetailSettings } from "./ConnectionDetailSettings";
+export { TemplatesSettings } from "./TemplatesSettings";
+export { TemplateDetailSettings } from "./TemplateDetailSettings";
+export { TriggerDetailSettings } from "./TriggerDetailSettings";

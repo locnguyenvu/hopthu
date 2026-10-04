@@ -1,15 +1,16 @@
 import { Link } from "wouter";
-import { Mail, Link as LinkIcon } from "lucide-react";
+import { Mail, Link as LinkIcon, FileText } from "lucide-react";
 import { Layout } from "../../components/Layout";
 
 export const SETTINGS_MENU = [
 	{ path: "/settings/email-accounts", label: "Email accounts", icon: Mail },
 	{ path: "/settings/connections", label: "Connections", icon: LinkIcon },
+	{ path: "/settings/templates", label: "Templates", icon: FileText },
 ];
 
-export function SettingsLayout({ active, breadcrumbs, children }) {
+export function SettingsLayout({ active, title = "Settings", breadcrumbs, children }) {
 	return (
-		<Layout title="Settings" breadcrumbs={breadcrumbs}>
+		<Layout title={title} breadcrumbs={breadcrumbs}>
 			<div class="mx-auto min-w-4xl max-w-8xl px-3 pb-10 flex gap-6">
 				{/* Left: menu bar */}
 				<aside class="w-56 shrink-0">

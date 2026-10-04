@@ -135,8 +135,8 @@ export function TemplateDetailEditor() {
 		<Layout
 			title="Templates"
 			breadcrumbs={[
-				{ label: "Templates", href: "/templates" },
-				{ label: `id: ${template.id}`, href: `/templates/${template.id}` },
+				{ label: "Templates", href: "/settings/templates" },
+				{ label: `id: ${template.id}`, href: `/settings/templates/${template.id}` },
 				{ label: "Edit template" },
 			]}
 		>
